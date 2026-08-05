@@ -479,8 +479,38 @@ def get_job_video(job_id: str):
         
     return send_file(video_path, mimetype="video/mp4")
 
+# ── LLM SCRIPT GENERATOR ENGINE (ON-COLAB LLM) ──
+LLM_PIPE = None
+LLM_LOCK = threading.Lock()
+
+def load_llm_script_model():
+    global LLM_PIPE
+    if LLM_PIPE is not None:
+        return LLM_PIPE
+    
+    with LLM_LOCK:
+        if LLM_PIPE is not None:
+            return LLM_PIPE
+            
+        print("🤖 [LLM Engine] Colab LLM Script Generator মডেল (Qwen/Qwen2.5-1.5B-Instruct) মেমোরিতে লোড করা হচ্ছে...")
+        try:
+            from transformers import pipeline
+            LLM_PIPE = pipeline(
+                "text-generation",
+                model="Qwen/Qwen2.5-1.5B-Instruct",
+                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+                device_map="auto" if torch.cuda.is_available() else "cpu",
+                trust_remote_code=True
+            )
+            print("✅ [LLM Engine] Qwen LLM Script AI প্রস্তুত!")
+        except Exception as err:
+            print(f"⚠️ [LLM Engine] LLM লোড হতে পারেনি: {err}")
+            LLM_PIPE = False
+            
+    return LLM_PIPE
+
 # ─────────────────────────────────────────────────────────────────────────────
-# GENERATE SCRIPT ENDPOINT — পুরো বাংলা স্ক্রিপ্ট তৈরি করে (কোনো AI মডেল ছাড়া)
+# GENERATE SCRIPT ENDPOINT — Colab On-Device AI Script Generator (Qwen LLM)
 # ─────────────────────────────────────────────────────────────────────────────
 @app.route("/generate-script", methods=["POST", "OPTIONS"])
 def generate_script():
@@ -496,17 +526,47 @@ def generate_script():
     location    = data.get("location", "").strip()
     vibe        = data.get("vibe", "cinematic sunset").strip()
 
-    import random
+    loc_line = f" | 📍 {location}" if location else ""
 
-    # ── প্রফেশনাল টিভি সিএম প্রমোশনাল হুক ──
+    # Try LLM Script Generation first
+    llm = load_llm_script_model()
+    if llm:
+        try:
+            messages = [
+                {"role": "system", "content": "তুমি একজন অভিজ্ঞ প্রফেশনাল এয়ারলাইনস কমার্শিয়াল ভিডিও স্ক্রিপ্ট রাইটার। সম্পূর্ণ বাংলা ভাষায় ৫টি সিন বিশিষ্ট একটি হাই-এনার্জি টিভি বিজ্ঞাপনের স্টোরিবোর্ড স্ক্রিপ্ট লেখো।"},
+                {"role": "user", "content": f"ফ্লাইট অফার তথ্য:\n- রুট: {from_city} থেকে {destination}\n- টিকেট মূল্য: {ticket_rate}\n- ব্যাগেজ: {baggage}\n- ফোন: {phone}\n- লোকেশন: {location}\n- ভিডিও ভাইব: {vibe}\n\nসিন ১: হুক শট\nসিন ২: অফার ও গন্তব্য\nসিন ৩: ব্যাগেজ ও আরাম\nসিন ৪: কল টু অ্যাকশন ({phone})\nসিন ৫: এন্ড ব্র্যান্ডিং\n\nপ্রতিটি সিনে Visual, Camera, Voice (বাংলায়) এবং Music উল্লেখ করে প্রফেশনাল ফরম্যাটে স্ক্রিপ্ট তৈরি করো।"}
+            ]
+            prompt_str = llm.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            outputs = llm(prompt_str, max_new_tokens=800, do_sample=True, temperature=0.7, top_p=0.9)
+            generated_text = outputs[0]["generated_text"][len(prompt_str):].strip()
+            
+            # Format nicely
+            full_script = f"""
+╔══════════════════════════════════════════════════════════╗
+   ✈️ ON-COLAB AI SCRIPT GENERATOR (Qwen 2.5 LLM)
+   📌 ROUTE: {from_city} ➜ {destination}
+╚══════════════════════════════════════════════════════════╝
+
+{generated_text}
+
+📺 OVERLAY BANNER FOR VIDEO FOOTAGE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️ {from_city} ➜ {destination}
+🔥 মাত্র {ticket_rate}  |  🧳 {baggage}
+📞 {phone}{loc_line}
+""".strip()
+            return jsonify({"script": full_script, "source": "Colab Qwen AI Model"})
+        except Exception as llm_err:
+            print(f"⚠️ LLM Generation Error: {llm_err}. Dynamic template fallback used.")
+
+    # High-impact template fallback
+    import random
     hooks = [
         f"আজই স্বদেশে ফেরার প্ল্যান করছেন? {from_city} থেকে সরাসরি {destination}!",
         f"আর অপেক্ষা নয়! {from_city} থেকে {destination} ফ্লাইটে অবিশ্বাস্য ধামাকা অফার!",
         f"স্বজনদের মিষ্টি মুখের হাসি দেখতে চান? {from_city} ➜ {destination} টিকেট স্পেশাল ডিল!",
     ]
     hook = random.choice(hooks)
-
-    loc_line = f" | 📍 {location}" if location else ""
 
     script = f"""
 ╔══════════════════════════════════════════════════════════╗
