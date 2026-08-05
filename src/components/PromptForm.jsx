@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Eye, Cpu, AlertCircle, Plane, DollarSign, Clock,
+  Eye, Cpu, AlertCircle, Plane, DollarSign, Clock, Bot, Sparkles, Zap,
   Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight, ArrowRight
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
@@ -47,6 +47,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   const [location, setLocation]       = useState('');
   const [vibe, setVibe]               = useState('cinematic sunset');
   const [duration, setDuration]       = useState('30s');
+  const [aiMode, setAiMode]           = useState('agent'); // 'agent' vs 'single'
   const [model, setModel]             = useState('Wan 2.2 TI2V 5B');
   const [refImageBase64, setRefImageBase64] = useState('');
   const [refImageName, setRefImageName]     = useState('');
@@ -93,6 +94,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
       location,
       vibe,
       duration,
+      aiMode,
       offer_text:       `${finalFrom} ✈️ ${finalTo} — মাত্র ${ticketRate}`,
       reference_image:  refImageBase64,
       video_model:      model,
@@ -249,7 +251,57 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
             </div>
           </div>
 
-          {/* ─── Row 4: Duration & Vibe ─── */}
+          {/* ─── Row 4: AI Engine Mode Selector (NEW) ─── */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-purple-400 mb-2 flex items-center gap-1.5">
+              <Bot className="w-4 h-4 text-purple-400" /> AI স্ক্রিপ্ট ইঞ্জিন মোড (Engine Mode)
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAiMode('agent')}
+                className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                  aiMode === 'agent'
+                    ? 'bg-purple-600/20 border-purple-500 text-purple-200 shadow-md shadow-purple-950/40'
+                    : 'bg-[#0b0f19] border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <Bot className={`w-5 h-5 shrink-0 mt-0.5 ${aiMode === 'agent' ? 'text-purple-400' : 'text-slate-500'}`} />
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <span>🤖 Agent Mode (Multi-AI Team)</span>
+                    <span className="text-[9px] px-1.5 py-0.2 bg-purple-500/30 text-purple-300 rounded font-semibold">সেরা কমার্শিয়াল</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    DeepSeek R1 + Gemini + Qwen একত্রে কাজ করে আল্ট্রা-হাই কনভার্টিং স্ক্রিপ্ট বানাবে।
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAiMode('single')}
+                className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                  aiMode === 'single'
+                    ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/40'
+                    : 'bg-[#0b0f19] border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <Zap className={`w-5 h-5 shrink-0 mt-0.5 ${aiMode === 'single' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-1.5">
+                    <span>⚡ Single AI Engine</span>
+                    <span className="text-[9px] px-1.5 py-0.2 bg-indigo-500/30 text-indigo-300 rounded font-semibold">আল্ট্রা ফাস্ট</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    Google Gemini 2.0 Flash / নির্বাচিত একক মডেল দিয়ে দ্রুততম সময়ে উত্তর দেবে।
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* ─── Row 5: Duration & Vibe ─── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Duration Selector */}
             <div>

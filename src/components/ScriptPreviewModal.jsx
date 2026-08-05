@@ -163,7 +163,9 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
   useEffect(() => {
     if (!isOpen || !jobPayload) return;
     setHasEdited(false);
-    fetchScript();
+    const targetAgentMode = jobPayload?.aiMode !== 'single';
+    setUseAgentMode(targetAgentMode);
+    fetchScript(targetAgentMode);
   }, [isOpen, jobPayload]);
 
   if (!isOpen) return null;
