@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import {
   Eye, Cpu, AlertCircle, Plane, DollarSign, Clock, Bot, Sparkles, Zap,
-  Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight, ArrowRight
+  Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight, ArrowRight,
+  RefreshCw, CheckCircle2, XCircle
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
+import { verifyAgentTeamHealth } from '../services/openrouter';
+import { getStoredOpenRouterKey } from '../services/storage';
 
 // ✅ বাংলাদেশের সকল বিমানবন্দর শহর (শুধু শহরের নাম)
 const BD_CITIES = [
@@ -53,6 +56,10 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   const [refImageName, setRefImageName]     = useState('');
   const [swapped, setSwapped]         = useState(false);
 
+  // Agent Mode Health Check State
+  const [checkingAgents, setCheckingAgents] = useState(false);
+  const [agentHealth, setAgentHealth]       = useState(null);
+
   // ─── Modal State ───
   const [showPreview, setShowPreview] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
@@ -79,6 +86,16 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   };
 
   const removeImage = () => { setRefImageBase64(''); setRefImageName(''); };
+
+  // Manual Health Check for AI Agents
+  const handleCheckAgents = async (e) => {
+    e.stopPropagation();
+    setCheckingAgents(true);
+    const key = getStoredOpenRouterKey();
+    const res = await verifyAgentTeamHealth(key);
+    setAgentHealth(res);
+    setCheckingAgents(false);
+  };
 
   // Step 1: Open preview modal with all filled info
   const handleSubmit = (e) => {
@@ -251,37 +268,66 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
             </div>
           </div>
 
-          {/* ─── Row 4: AI Engine Mode Selector (NEW) ─── */}
+          {/* ─── Row 4: AI Engine Mode Selector with Refresh Button ─── */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-purple-400 mb-2 flex items-center gap-1.5">
               <Bot className="w-4 h-4 text-purple-400" /> AI স্ক্রিপ্ট ইঞ্জিন মোড (Engine Mode)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Agent Mode Card */}
               <button
                 type="button"
                 onClick={() => setAiMode('agent')}
-                className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all relative ${
                   aiMode === 'agent'
                     ? 'bg-purple-600/20 border-purple-500 text-purple-200 shadow-md shadow-purple-950/40'
                     : 'bg-[#0b0f19] border-slate-800 text-slate-400 hover:border-slate-700'
                 }`}
               >
                 <Bot className={`w-5 h-5 shrink-0 mt-0.5 ${aiMode === 'agent' ? 'text-purple-400' : 'text-slate-500'}`} />
-                <div>
-                  <div className="text-xs font-bold flex items-center gap-1.5">
+                <div className="flex-1">
+                  <div className="text-xs font-bold flex items-center justify-between gap-1.5">
                     <span>🤖 Agent Mode (Multi-AI Team)</span>
-                    <span className="text-[9px] px-1.5 py-0.2 bg-purple-500/30 text-purple-300 rounded font-semibold">সেরা কমার্শিয়াল</span>
+                    <button
+                      type="button"
+                      onClick={handleCheckAgents}
+                      disabled={checkingAgents}
+                      className="px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 border border-purple-500/40 text-[10px] font-semibold flex items-center gap-1 transition-all"
+                      title="ম্যানুয়ালি সকল এআই এজেন্ট রিফ্রেশ ও চেক করুন"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${checkingAgents ? 'animate-spin' : ''}`} />
+                      <span>{checkingAgents ? 'চেক হচ্ছে...' : '🔄 রিফ্রেশ'}</span>
+                    </button>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
                     DeepSeek R1 + Gemini + Qwen একত্রে কাজ করে আল্ট্রা-হাই কনভার্টিং স্ক্রিপ্ট বানাবে।
                   </p>
+
+                  {/* Dynamic Agent Status Badges (Tickmark / Crossmark) */}
+                  <div className="mt-2.5 pt-2 border-t border-purple-500/30 flex flex-wrap gap-x-2 gap-y-1 text-[10px] font-medium">
+                    {agentHealth ? (
+                      agentHealth.checks.map((ag, idx) => (
+                        <span key={idx} className={`flex items-center gap-0.5 ${ag.ok ? 'text-emerald-300 font-semibold' : 'text-rose-400 font-semibold'}`}>
+                          {ag.ok ? <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> : <XCircle className="w-3 h-3 text-rose-400 shrink-0" />}
+                          {ag.name}
+                        </span>
+                      ))
+                    ) : (
+                      <>
+                        <span className="flex items-center gap-0.5 text-emerald-300"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> DeepSeek R1</span>
+                        <span className="flex items-center gap-0.5 text-emerald-300"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Gemini 2.0</span>
+                        <span className="flex items-center gap-0.5 text-emerald-300"><CheckCircle2 className="w-3 h-3 text-emerald-400" /> Qwen 2.5</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </button>
 
+              {/* Single AI Mode Card */}
               <button
                 type="button"
                 onClick={() => setAiMode('single')}
-                className={`p-3 rounded-xl border text-left flex items-start gap-3 transition-all ${
+                className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all ${
                   aiMode === 'single'
                     ? 'bg-indigo-600/20 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/40'
                     : 'bg-[#0b0f19] border-slate-800 text-slate-400 hover:border-slate-700'
@@ -293,9 +339,14 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
                     <span>⚡ Single AI Engine</span>
                     <span className="text-[9px] px-1.5 py-0.2 bg-indigo-500/30 text-indigo-300 rounded font-semibold">আল্ট্রা ফাস্ট</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
                     Google Gemini 2.0 Flash / নির্বাচিত একক মডেল দিয়ে দ্রুততম সময়ে উত্তর দেবে।
                   </p>
+                  {aiMode === 'single' && (
+                    <div className="mt-2.5 pt-2 border-t border-indigo-500/30 text-[10px] text-emerald-300 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Google Gemini 2.0 Flash (সক্রিয়)
+                    </div>
+                  )}
                 </div>
               </button>
             </div>
