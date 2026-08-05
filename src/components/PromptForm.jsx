@@ -1,41 +1,24 @@
 import React, { useState } from 'react';
 import {
   Eye, Cpu, AlertCircle, Plane, DollarSign,
-  Image as ImageIcon, X, MapPin, Phone, Luggage,
-  ArrowRight
+  Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
 
-// ✅ বাংলাদেশের সকল বিমানবন্দর শহর
-const POPULAR_CITIES = [
-  'ঢাকা — হযরত শাহজালাল আন্তর্জাতিক (DAC)',
-  'চট্টগ্রাম — শাহ আমানত আন্তর্জাতিক (CGP)',
-  'সিলেট — ওসমানী আন্তর্জাতিক (ZYL)',
-  'কক্সবাজার — কক্সবাজার বিমানবন্দর (CXB)',
-  'যশোর — যশোর বিমানবন্দর (JSR)',
-  'রাজশাহী — শাহ মখদুম বিমানবন্দর (RJH)',
-  'বরিশাল — বরিশাল বিমানবন্দর (BZL)',
-  'সৈয়দপুর — সৈয়দপুর বিমানবন্দর (SPD)',
+// ✅ বাংলাদেশের সকল বিমানবন্দর শহর (শুধু শহরের নাম)
+const BD_CITIES = [
+  'ঢাকা', 'চট্টগ্রাম', 'সিলেট', 'কক্সবাজার',
+  'যশোর', 'রাজশাহী', 'বরিশাল', 'সৈয়দপুর',
 ];
 
-// ✅ সৌদি আরবের সকল বিমানবন্দর শহর
-const DEST_CITIES = [
-  'Riyadh — King Khalid Intl (RUH) | রিয়াদ',
-  'Jeddah — King Abdulaziz Intl (JED) | জেদ্দা',
-  'Dammam — King Fahd Intl (DMM) | দাম্মাম',
-  'Medina — Prince Mohammad bin Abdulaziz (MED) | মদিনা',
-  'Abha — Abha Regional Airport (AHB) | আভা',
-  'Tabuk — Prince Sultan bin Abdulaziz (TUU) | তাবুক',
-  'Taif — Taif Regional Airport (TIF) | তায়েফ',
-  'Yanbu — Prince Abdul Mohsin Airport (YNB) | ইয়ানবু',
-  'Al-Qassim — Prince Nayef Airport (ELQ) | আল-কাসিম',
-  'Hail — Hail Regional Airport (HAS) | হাইল',
-  'Jizan — King Abdullah Airport (GIZ) | জিজান',
-  'Najran — Najran Domestic Airport (EAM) | নাজরান',
-  'Al-Baha — Al-Baha Domestic Airport (ABT) | আল-বাহা',
-  'Al-Jouf — Al-Jouf Domestic Airport (AJF) | আল-জুফ',
-  'Sharurah — Sharurah Domestic Airport (SHW) | শারুরাহ',
-  'Wadi ad-Dawasir — WAD Airport (WAE) | ওয়াদি আদ-দাওয়াসির',
+// ✅ সৌদি আরবের সকল বিমানবন্দর শহর (শুধু শহরের নাম)
+const SA_CITIES = [
+  'Riyadh (রিয়াদ)', 'Jeddah (জেদ্দা)', 'Dammam (দাম্মাম)',
+  'Medina (মদিনা)', 'Abha (আভা)', 'Tabuk (তাবুক)',
+  'Taif (তায়েফ)', 'Yanbu (ইয়ানবু)', 'Al-Qassim (আল-কাসিম)',
+  'Hail (হাইল)', 'Jizan (জিজান)', 'Najran (নাজরান)',
+  'Al-Baha (আল-বাহা)', 'Al-Jouf (আল-জুফ)',
+  'Sharurah (শারুরাহ)', 'Wadi ad-Dawasir (ওয়াদি আদ-দাওয়াসির)',
 ];
 
 const VIBE_OPTIONS = [
@@ -47,9 +30,9 @@ const VIBE_OPTIONS = [
 
 export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpenSettings }) {
   // ─── Form Fields ───
-  const [fromCity, setFromCity]       = useState('ঢাকা (DAC)');
+  const [fromCity, setFromCity]       = useState('ঢাকা');
   const [customFrom, setCustomFrom]   = useState('');
-  const [toCity, setToCity]           = useState('Dubai (দুবাই)');
+  const [toCity, setToCity]           = useState('Riyadh (রিয়াদ)');
   const [customTo, setCustomTo]       = useState('');
   const [ticketRate, setTicketRate]   = useState('৳৩৫,০০০');
   const [baggage, setBaggage]         = useState('২০ কেজি');
@@ -59,13 +42,23 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   const [model, setModel]             = useState('Wan 2.2 TI2V 5B');
   const [refImageBase64, setRefImageBase64] = useState('');
   const [refImageName, setRefImageName]     = useState('');
+  const [swapped, setSwapped]         = useState(false);
 
   // ─── Modal State ───
   const [showPreview, setShowPreview] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
 
-  const finalFrom = customFrom.trim() || fromCity.split(' ')[0];
-  const finalTo   = customTo.trim()   || toCity.split(' ')[0];
+  const finalFrom = customFrom.trim() || fromCity;
+  const finalTo   = customTo.trim()   || toCity;
+
+  // ─── Swap Origin ↔ Destination ───
+  const handleSwap = () => {
+    setFromCity(toCity);
+    setToCity(fromCity);
+    setCustomFrom(customTo);
+    setCustomTo(customFrom);
+    setSwapped(s => !s);
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -148,30 +141,47 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* ─── Row 1: From → To ─── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* From */}
-            <div>
+          {/* ─── Row 1: From ⇄ To with Swap Button ─── */}
+          <div className="flex flex-col sm:flex-row items-stretch gap-3">
+
+            {/* FROM */}
+            <div className="flex-1">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                 🛫 কোথা থেকে (Origin)
               </label>
               <select value={fromCity} onChange={(e) => { setFromCity(e.target.value); setCustomFrom(''); }}
                 className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 mb-2">
-                {POPULAR_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                {BD_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                {SA_CITIES.map((c, i) => <option key={'sa-'+i} value={c}>{c}</option>)}
               </select>
               <input type="text" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
                 placeholder="অথবা নিজে লিখুন…"
                 className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500" />
             </div>
 
-            {/* To */}
-            <div>
+            {/* SWAP BUTTON */}
+            <div className="flex items-center justify-center pt-0 sm:pt-5">
+              <button
+                type="button"
+                onClick={handleSwap}
+                title="Origin ও Destination বদলান"
+                className={`w-11 h-11 rounded-full flex items-center justify-center border-2 border-indigo-500/50 bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-400 hover:text-indigo-200 transition-all duration-300 hover:scale-110 active:scale-95 ${
+                  swapped ? 'rotate-180' : 'rotate-0'
+                } transition-transform`}
+              >
+                <ArrowLeftRight className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* TO */}
+            <div className="flex-1">
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
                 🛬 কোথায় (Destination)
               </label>
               <select value={toCity} onChange={(e) => { setToCity(e.target.value); setCustomTo(''); }}
                 className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 mb-2">
-                {DEST_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                {SA_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
+                {BD_CITIES.map((c, i) => <option key={'bd-'+i} value={c}>{c}</option>)}
               </select>
               <input type="text" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
                 placeholder="অথবা নিজে লিখুন…"
