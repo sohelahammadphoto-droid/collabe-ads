@@ -34,7 +34,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   const [customFrom, setCustomFrom]   = useState('');
   const [toCity, setToCity]           = useState('Riyadh (রিয়াদ)');
   const [customTo, setCustomTo]       = useState('');
-  const [ticketRate, setTicketRate]   = useState('৳৩৫,০০০');
+  const [ticketRate, setTicketRate]   = useState('SAR 350');
   const [baggage, setBaggage]         = useState('২০ কেজি');
   const [phone, setPhone]             = useState('');
   const [location, setLocation]       = useState('');
@@ -203,10 +203,10 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4" /> টিকেটের রেট / মূল্য
+                <DollarSign className="w-4 h-4" /> টিকেটের রেট / মূল্য (SAR রিয়াল)
               </label>
               <input type="text" value={ticketRate} onChange={(e) => setTicketRate(e.target.value)}
-                placeholder="যেমন: ৳৩৫,০০০"
+                placeholder="যেমন: SAR 350, SAR 1200"
                 className="w-full bg-[#0b0f19] border border-amber-500/40 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 font-bold text-amber-200" />
             </div>
             <div>
