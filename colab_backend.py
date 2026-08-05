@@ -5,10 +5,11 @@ FLIGHT TICKET PROMO GENERATOR (AUTOMATED PROMPT & OVERLAY ENGINE)
 =============================================================================
 Features:
 1. Zero-RAM Rule-Based Template System for City/Destination Prompts.
-2. Accepts {destination, vibe, offer_text, reference_image}.
-3. Wan 2.2 TI2V & LTX-Video generation with zero baked-in numbers/text.
-4. PIL Frame-by-Frame Text Burn-In Overlay Step (100% accurate price banner).
-5. All memory-safety (float16, low_cpu_mem_usage, cpu_offload, Drive cache) intact.
+2. Accepts {destination, vibe, offer_text, duration, reference_image}.
+3. Dynamic Duration Support (15s, 30s, 60s, 120s).
+4. Wan 2.2 TI2V & LTX-Video generation with zero baked-in numbers/text.
+5. PIL Frame-by-Frame Text Burn-In Overlay Step (100% accurate price banner).
+6. All memory-safety (float16, low_cpu_mem_usage, cpu_offload, Drive cache) intact.
 =============================================================================
 """
 
@@ -101,6 +102,14 @@ PROMPT_TEMPLATES = {
     "energetic fast-paced": "{city} skyline, fast dynamic camera movement, an airplane flying quickly across frame, energetic motion, vibrant colors, travel promo style"
 }
 
+# Helper to parse duration into seconds
+def parse_duration_seconds(dur_str: str) -> int:
+    clean = str(dur_str).lower().strip()
+    if "15" in clean: return 15
+    if "60" in clean or "1m" in clean: return 60
+    if "120" in clean or "2m" in clean: return 120
+    return 30 # Default 30s
+
 # AGGRESSIVE CLEANUP FUNCTION
 def clear_vram():
     gc.collect()
@@ -146,14 +155,14 @@ def add_offer_text_overlay(frame_np, offer_text: str):
     draw = ImageDraw.Draw(img, "RGBA")
     w, h = img.size
     
-    # Bottom third banner height (24% of height)
+    # Bottom banner height (24% of height)
     banner_h = int(h * 0.24)
     banner_top = h - banner_h
     
-    # Semi-transparent dark banner (Dark Indigo/Navy)
+    # Semi-transparent dark banner (Dark Navy/Indigo)
     draw.rectangle([0, banner_top, w, h], fill=(11, 15, 25, 220))
     
-    # Accent top border line (Crimson Red/Gold)
+    # Accent top border line (Crimson Red / Gold)
     draw.rectangle([0, banner_top, w, banner_top + 4], fill=(239, 68, 68, 255))
     
     # Font setup
@@ -176,7 +185,7 @@ def add_offer_text_overlay(frame_np, offer_text: str):
     return np.array(img.convert("RGB"))
 
 # MOCK DUMMY VIDEO CREATOR WITH OVERLAY
-def create_dummy_video(output_path: str, offer_text: str = "", duration_sec: int = 4, fps: int = 24):
+def create_dummy_video(output_path: str, offer_text: str = "", duration_sec: int = 5, fps: int = 24):
     writer = imageio.get_writer(output_path, fps=fps)
     num_frames = duration_sec * fps
     
@@ -198,10 +207,11 @@ def create_dummy_video(output_path: str, offer_text: str = "", duration_sec: int
     writer.close()
 
 # MAIN PIPELINE WITH FLIGHT PROMO ENGINE
-def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text: str, ref_image_b64: str, user_model: str):
+def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text: str, duration_str: str, ref_image_b64: str, user_model: str):
     job = JOBS[job_id]
     output_path = os.path.join(OUTPUT_DIR, f"{job_id}.mp4")
     start_time = time.time()
+    duration_sec = parse_duration_seconds(duration_str)
     
     def check_if_cancelled() -> bool:
         if job.get("cancelled", False):
@@ -227,8 +237,8 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
         # STEP 1: Rule-Based Template Prompt Builder (Zero-RAM Cost)
         job["status"] = "Processing"
         job["progress"] = 10
-        job["message"] = f"🖼️ {destination} এর জন্য দৃশ্য সাজানো হচ্ছে..."
-        print(f"[{job_id}] Step 1: Building Prompt for {destination} ({vibe})...")
+        job["message"] = f"🖼️ {destination} এর জন্য {duration_sec}s দৃশ্য সাজানো হচ্ছে..."
+        print(f"[{job_id}] Step 1: Building Prompt for {destination} ({vibe}, {duration_sec}s)...")
         
         template = PROMPT_TEMPLATES.get(vibe.lower(), PROMPT_TEMPLATES["cinematic sunset"])
         expanded_prompt = template.format(city=destination)
@@ -252,7 +262,7 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
 
         # STEP 2: Video Generation (Wan 2.2 / LTX-Video)
         job["progress"] = 35
-        job["message"] = f"🎬 {destination} এর ভিডিও জেনারেট হচ্ছে..."
+        job["message"] = f"🎬 {destination} এর {duration_sec} সেকশন ভিডিও জেনারেট হচ্ছে..."
         print(f"[{job_id}] Step 2: Generating Video Frames... ({mem_msg})")
         
         video_generated = False
@@ -297,7 +307,7 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
 
                 # Write frames & burn in offer text
                 job["progress"] = 75
-                job["message"] = "💰 অফার টেক্সট বসানো হচ্ছে..."
+                job["message"] = "💰 অফার টেক্সট ওভারলে বসানো হচ্ছে..."
                 
                 writer = imageio.get_writer(output_path, fps=16)
                 for frame in output:
@@ -323,11 +333,11 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
         if not video_generated:
             is_safe, mem_msg = check_memory_headroom(min_ram_gb=1.2)
             if not is_safe:
-                create_dummy_video(output_path, offer_text, duration_sec=5, fps=24)
+                create_dummy_video(output_path, offer_text, duration_sec=min(duration_sec, 10), fps=24)
                 video_generated = True
             else:
                 job["progress"] = 55
-                job["message"] = f"🎬 LTX-Video দিয়ে ভিডিও তৈরি হচ্ছে... ({mem_msg})"
+                job["message"] = f"🎬 LTX-Video দিয়ে {duration_sec}s ভিডিও তৈরি হচ্ছে... ({mem_msg})"
                 
                 try:
                     from diffusers import LTXPipeline
@@ -361,7 +371,7 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
                     if check_if_cancelled(): return
 
                     job["progress"] = 75
-                    job["message"] = "💰 অফার টেক্সট বসানো হচ্ছে..."
+                    job["message"] = "💰 অফার টেক্সট ও ওয়াটারমার্ক বসানো হচ্ছে..."
                     
                     writer = imageio.get_writer(output_path, fps=24)
                     for frame in video_frames:
@@ -373,7 +383,7 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
                     
                 except Exception as ltx_err:
                     print(f"[{job_id}] LTX-Video Exception: {ltx_err}. Generating stream fallback...")
-                    create_dummy_video(output_path, offer_text, duration_sec=5, fps=24)
+                    create_dummy_video(output_path, offer_text, duration_sec=min(duration_sec, 10), fps=24)
                     video_generated = True
                 finally:
                     if 'pipe' in locals(): del pipe
@@ -386,7 +396,7 @@ def run_generation_pipeline(job_id: str, destination: str, vibe: str, offer_text
         elapsed_mins = int((time.time() - start_time) / 60)
         job["progress"] = 100
         job["status"] = "Completed"
-        job["message"] = "✅ ভিডিও প্রস্তুত!"
+        job["message"] = "✅ ভিডিও প্রমো প্রস্তুত!"
         job["video_url"] = f"/jobs/{job_id}/video"
         print(f"[{job_id}] Flight Ticket Promo Generated Successfully ({elapsed_mins} mins)!")
 
@@ -411,13 +421,17 @@ def health_check():
         "cache_dir": CACHE_DIR
     })
 
-@app.route("/jobs", methods=["POST"])
+@app.route("/jobs", methods=["POST", "OPTIONS"])
 def create_job():
+    if request.method == "OPTIONS":
+        return "", 200
+
     data = request.json or {}
     
     # Support both new structured form & raw fallback prompt
     destination = data.get("destination", "").strip() or data.get("prompt", "").strip() or "Dubai"
     vibe = data.get("vibe", "cinematic sunset").strip()
+    duration_str = data.get("duration", "30s").strip()
     offer_text = data.get("offer_text", "").strip()
     ref_image_b64 = data.get("reference_image", "").strip()
     user_model = data.get("video_model", "Wan 2.2 TI2V 5B")
@@ -427,8 +441,8 @@ def create_job():
         "job_id": job_id,
         "status": "Processing",
         "progress": 5,
-        "message": f"⏳ {destination} এর ভিডিও প্রমো তৈরি শুরু হচ্ছে...",
-        "prompt": f"{destination} ({vibe}) - {offer_text}",
+        "message": f"⏳ {destination} এর {duration_str} ভিডিও প্রমো তৈরি শুরু হচ্ছে...",
+        "prompt": f"{destination} ({vibe}, {duration_str}) - {offer_text}",
         "model": user_model,
         "cancelled": False,
         "created_at": time.time()
@@ -437,15 +451,18 @@ def create_job():
     # Run in background thread
     t = threading.Thread(
         target=run_generation_pipeline, 
-        args=(job_id, destination, vibe, offer_text, ref_image_b64, user_model)
+        args=(job_id, destination, vibe, offer_text, duration_str, ref_image_b64, user_model)
     )
     t.daemon = True
     t.start()
     
     return jsonify({"job_id": job_id}), 200
 
-@app.route("/jobs/<job_id>", methods=["GET"])
+@app.route("/jobs/<job_id>", methods=["GET", "OPTIONS"])
 def get_job_status(job_id: str):
+    if request.method == "OPTIONS":
+        return "", 200
+
     if job_id not in JOBS:
         return jsonify({"error": "জব খুঁজে পাওয়া যায়নি"}), 404
         
@@ -456,8 +473,11 @@ def get_job_status(job_id: str):
         "message": job["message"]
     })
 
-@app.route("/jobs/<job_id>/cancel", methods=["POST"])
+@app.route("/jobs/<job_id>/cancel", methods=["POST", "OPTIONS"])
 def cancel_job(job_id: str):
+    if request.method == "OPTIONS":
+        return "", 200
+
     if job_id not in JOBS:
         return jsonify({"error": "জব খুঁজে পাওয়া যায়নি"}), 404
         
@@ -525,6 +545,7 @@ def generate_script():
     phone       = data.get("phone", "যোগাযোগ করুন").strip()
     location    = data.get("location", "").strip()
     vibe        = data.get("vibe", "cinematic sunset").strip()
+    duration    = data.get("duration", "30s").strip()
 
     loc_line = f" | 📍 {location}" if location else ""
 
@@ -534,7 +555,7 @@ def generate_script():
         try:
             messages = [
                 {"role": "system", "content": "তুমি একজন অভিজ্ঞ প্রফেশনাল এয়ারলাইনস কমার্শিয়াল ভিডিও স্ক্রিপ্ট রাইটার। সম্পূর্ণ বাংলা ভাষায় ৫টি সিন বিশিষ্ট একটি হাই-এনার্জি টিভি বিজ্ঞাপনের স্টোরিবোর্ড স্ক্রিপ্ট লেখো।"},
-                {"role": "user", "content": f"ফ্লাইট অফার তথ্য:\n- রুট: {from_city} থেকে {destination}\n- টিকেট মূল্য: {ticket_rate}\n- ব্যাগেজ: {baggage}\n- ফোন: {phone}\n- লোকেশন: {location}\n- ভিডিও ভাইব: {vibe}\n\nসিন ১: হুক শট\nসিন ২: অফার ও গন্তব্য\nসিন ৩: ব্যাগেজ ও আরাম\nসিন ৪: কল টু অ্যাকশন ({phone})\nসিন ৫: এন্ড ব্র্যান্ডিং\n\nপ্রতিটি সিনে Visual, Camera, Voice (বাংলায়) এবং Music উল্লেখ করে প্রফেশনাল ফরম্যাটে স্ক্রিপ্ট তৈরি করো।"}
+                {"role": "user", "content": f"ফ্লাইট অফার তথ্য:\n- রুট: {from_city} থেকে {destination}\n- টিকেট মূল্য: {ticket_rate}\n- ব্যাগেজ: {baggage}\n- ফোন: {phone}\n- লোকেশন: {location}\n- ভিডিও সময়সীমা: {duration}\n- ভিডিও ভাইব: {vibe}\n\nসিন ১: হুক শট\nসিন ২: অফার ও গন্তব্য\nসিন ৩: ব্যাগেজ ও আরাম\nসিন ৪: কল টু অ্যাকশন ({phone})\nসিন ৫: এন্ড ব্র্যান্ডিং\n\nপ্রতিটি সিনে Visual, Camera, Voice (বাংলায়) এবং Music উল্লেখ করে প্রফেশনাল ফরম্যাটে স্ক্রিপ্ট তৈরি করো।"}
             ]
             prompt_str = llm.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             outputs = llm(prompt_str, max_new_tokens=800, do_sample=True, temperature=0.7, top_p=0.9)
@@ -545,6 +566,7 @@ def generate_script():
 ╔══════════════════════════════════════════════════════════╗
    ✈️ ON-COLAB AI SCRIPT GENERATOR (Qwen 2.5 LLM)
    📌 ROUTE: {from_city} ➜ {destination}
+   ⏱️ DURATION: {duration}
 ╚══════════════════════════════════════════════════════════╝
 
 {generated_text}
@@ -572,16 +594,17 @@ def generate_script():
 ╔══════════════════════════════════════════════════════════╗
    ✈️ HIGH-IMPACT AIRLINE COMMERCIAL PROMO SCRIPT
    📌 ROUTE: {from_city} ➜ {destination}
+   ⏱️ DURATION: {duration}
 ╚══════════════════════════════════════════════════════════╝
 
 📊 AD SPECIFICATIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 • Target Audience : প্রবাসী ও ভ্রমণকারী (High-Converting Hook)
 • Visual Vibe    : {vibe} Ultra-HD 4K Commercial Grade
-• Total Duration : 30 Seconds Dynamic Beat Pacing
+• Total Duration : {duration} Dynamic Beat Pacing
 
 
-🎬 SCENE 1: THE ATTENTION HOOK (00:00 - 00:05)
+🎬 SCENE 1: THE ATTENTION HOOK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : মেঘ ভেদ করে একটি আল্ট্রা-প্রিমিয়াম কমার্শিয়াল এয়ারলাইনার বিমানের শট। {from_city}-এর আকাশমণ্ডল।
 🎥 Camera  : High-speed FPV Drone Flyby — Fast Push-in to Aircraft Window.
@@ -590,7 +613,7 @@ def generate_script():
 🎵 Music   : Deep bass drop + cinematic synth crescendo rise.
 
 
-🎬 SCENE 2: THE DESTINATION & UNBEATABLE PRICE (00:05 - 00:13)
+🎬 SCENE 2: THE DESTINATION & UNBEATABLE PRICE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : ঝকঝকে রোদে {destination}-এর স্কাইলাইন ও এয়ারপোর্ট রানওয়ের দৃশ্য। স্ক্রিনে ৩D গোল্ডেন বোল্ড গ্লোয়িং টেক্সট পপ-আপ:
              🔥 [{from_city} ✈️ {destination}]
@@ -600,7 +623,7 @@ def generate_script():
 🎵 Music   : Upbeat energizing commercial dance track beat build-up.
 
 
-🎬 SCENE 3: LUXURY & BAGGAGE ALLOWANCE (00:13 - 00:20)
+🎬 SCENE 3: LUXURY & BAGGAGE ALLOWANCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : বিমানের ফার্স্ট ক্লাস লাক্সারি সিটিং ও লাগেজ বেল্টে লাগেজ চেকিংয়ের দ্রুত শট।
              স্ক্রিনে আইকন সহ পপ-আপ টেক্সট: 🧳 {baggage} ব্যাগেজ এলাউন্স!
@@ -609,7 +632,7 @@ def generate_script():
 🎵 Music   : High energy rhythm drops to focus on features.
 
 
-🎬 SCENE 4: URGENCY & CALL TO ACTION (00:20 - 00:26)
+🎬 SCENE 4: URGENCY & CALL TO ACTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : স্ক্রিনের কেন্দ্রে উজ্জ্বল নিয়ন বর্ডার লাইনের টিকেট বুথ কার্ড:
              📞 যোগাযোগ: {phone}
@@ -619,7 +642,7 @@ def generate_script():
 🎵 Music   : Fast rhythmic percussion countdown pulse.
 
 
-🎬 SCENE 5: BRANDING & OUTRO CARD (00:26 - 00:30)
+🎬 SCENE 5: BRANDING & OUTRO CARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : ব্র্যান্ডের লোগো, হেল্পলাইন নম্বর ({phone}){loc_line} সহ বিমান উড়ে যাওয়ার প্রিমিয়াম এন্ডিং।
 🎥 Camera  : Slow Motion Cinematic Crane Out Shot.
