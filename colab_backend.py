@@ -498,111 +498,84 @@ def generate_script():
 
     import random
 
-    # ── ক্রিয়েটিভ ওপেনিং লাইন ──
-    openers = [
-        "স্বপ্নের যাত্রা শুরু হোক...",
-        f"{from_city} থেকে {destination} — একটি অবিস্মরণীয় যাত্রার গল্প",
-        "আকাশের পথে স্বদেশের টান...",
-        f"প্রিয়জনের কাছে ফিরে যাওয়ার সময় হয়েছে!",
-        "দূরত্ব এখন শুধু একটি টিকেটের ব্যবধান...",
+    # ── প্রফেশনাল টিভি সিএম প্রমোশনাল হুক ──
+    hooks = [
+        f"আজই স্বদেশে ফেরার প্ল্যান করছেন? {from_city} থেকে সরাসরি {destination}!",
+        f"আর অপেক্ষা নয়! {from_city} থেকে {destination} ফ্লাইটে অবিশ্বাস্য ধামাকা অফার!",
+        f"স্বজনদের মিষ্টি মুখের হাসি দেখতে চান? {from_city} ➜ {destination} টিকেট স্পেশাল ডিল!",
     ]
-    opener = random.choice(openers)
+    hook = random.choice(hooks)
 
-    # ── ক্রিয়েটিভ CTA ──
-    ctas = [
-        f"আর দেরি নয় — এখনই {phone}-এ কল করুন!",
-        f"সীমিত আসন! {phone} — আজই বুক করুন",
-        f"এই সুযোগ মিস করবেন না। ফোন করুন: {phone}",
-        f"আপনার সিট রিজার্ভ করুন এখনই — {phone}",
-    ]
-    cta = random.choice(ctas)
-
-    # ── সিন-১ ভিজ্যুয়াল ──
-    scene1_visuals = [
-        f"{from_city}-এর আকাশসীমা — {vibe} আলোয় বিমান উড়ছে। ধীরে ধীরে zoom-in।",
-        f"সূর্যাস্তের পটভূমিতে {from_city}-এর শহর। দূরে একটি বিমান মিলিয়ে যাচ্ছে।",
-        f"{from_city}-এর বিমানবন্দর — রানওয়েতে বিমান প্রস্তুত। গোলাপি সন্ধ্যার আলো।",
-    ]
-    scene1_v = random.choice(scene1_visuals)
-
-    loc_line = f" | {location}" if location else ""
+    loc_line = f" | 📍 {location}" if location else ""
 
     script = f"""
-╔══════════════════════════════════════════════╗
-   ✈️  ফ্লাইট প্রমো ভিডিও — সম্পূর্ণ স্ক্রিপ্ট
-   {from_city} ➜ {destination}
-╚══════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+   ✈️ HIGH-IMPACT AIRLINE COMMERCIAL PROMO SCRIPT
+   📌 ROUTE: {from_city} ➜ {destination}
+╚══════════════════════════════════════════════════════════╝
 
-📋 ভিডিও ইনফো
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-রুট      : {from_city} → {destination}
-মূল্য    : {ticket_rate}
-ব্যাগেজ  : {baggage}
-ফোন      : {phone}
-লোকেশন  : {location or "—"}
-ভাইব     : {vibe}
-মোট সময় : ৩০ - ৪৫ সেকেন্ড
+📊 AD SPECIFICATIONS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Target Audience : প্রবাসী ও ভ্রমণকারী (High-Converting Hook)
+• Visual Vibe    : {vibe} Ultra-HD 4K Commercial Grade
+• Total Duration : 30 Seconds Dynamic Beat Pacing
 
 
-🎬 সিন-১ (০ - ৬ সেকেন্ড) — ওপেনিং শট
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: {scene1_v}
-🎥 ক্যামেরা: Slow drone pull-back shot — উপর থেকে নিচে
-🎙️ ভয়েস: "{opener}"
-🎵 মিউজিক: Soft emotional cinematic — ধীরে শুরু
+🎬 SCENE 1: THE ATTENTION HOOK (00:00 - 00:05)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 Visual  : মেঘ ভেদ করে একটি আল্ট্রা-প্রিমিয়াম কমার্শিয়াল এয়ারলাইনার বিমানের শট। {from_city}-এর আকাশমণ্ডল।
+🎥 Camera  : High-speed FPV Drone Flyby — Fast Push-in to Aircraft Window.
+🎙️ Voice   : (উজ্জ্বল ও আকর্ষক এক্সসাইটেড ভয়েস)
+             "{hook}"
+🎵 Music   : Deep bass drop + cinematic synth crescendo rise.
 
 
-🎬 সিন-২ (৬ - ১৫ সেকেন্ড) — অফার রিভিল
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: {destination}-এর বিখ্যাত দৃশ্য। সোনালি আলোয়
-   শহর ঝলমলে। স্ক্রিনে text animation:
-   ✈️ "{from_city} → {destination}"
-🎥 ক্যামেরা: Aerial flyover — শহরের উপর দিয়ে
-🎙️ ভয়েস: "{from_city} থেকে {destination}!"
-   "এখন মাত্র {ticket_rate}!"
-🎵 মিউজিক: একটু জোরালো — excitement build করছে
+🎬 SCENE 2: THE DESTINATION & UNBEATABLE PRICE (00:05 - 00:13)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 Visual  : ঝকঝকে রোদে {destination}-এর স্কাইলাইন ও এয়ারপোর্ট রানওয়ের দৃশ্য। স্ক্রিনে ৩D গোল্ডেন বোল্ড গ্লোয়িং টেক্সট পপ-আপ:
+             🔥 [{from_city} ✈️ {destination}]
+             💥 [মূল্য: মাত্র {ticket_rate}]
+🎥 Camera  : Dynamic Whip-Pan Shot — শট খুব দ্রুত এবং মসৃণভাবে চেঞ্জ হয়।
+🎙️ Voice   : "একদম বাজেট ফ্রেন্ডলি সেরা রেটে টিকিট নিন! {from_city} থেকে {destination} এখন মাত্র {ticket_rate}!"
+🎵 Music   : Upbeat energizing commercial dance track beat build-up.
 
 
-🎬 সিন-৩ (১৫ - ২৫ সেকেন্ড) — সুবিধা দেখানো
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: বিমানের ভেতরে আরামদায়ক সিট।
-   নিচে text: "🧳 ব্যাগেজ: {baggage}" | "✈️ সীমিত আসন!"
-🎥 ক্যামেরা: Close-up থেকে wide — smooth pan
-🎙️ ভয়েস: "{baggage} ব্যাগেজ সহ পরিপূর্ণ প্যাকেজ!"
-   "সীমিত আসন — এখনই সুযোগ নিন!"
-🎵 মিউজিক: উত্তেজনাপূর্ণ — peak moment
+🎬 SCENE 3: LUXURY & BAGGAGE ALLOWANCE (00:13 - 00:20)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 Visual  : বিমানের ফার্স্ট ক্লাস লাক্সারি সিটিং ও লাগেজ বেল্টে লাগেজ চেকিংয়ের দ্রুত শট।
+             স্ক্রিনে আইকন সহ পপ-আপ টেক্সট: 🧳 {baggage} ব্যাগেজ এলাউন্স!
+🎥 Camera  : Smooth Gimbal Tracking Shot — সিটের আরাম ও স্বাচ্ছন্দ্য ফোকাস।
+🎙️ Voice   : "বাড়তি লাগেজ নিয়ে নো চিন্তা! পাচ্ছেন পুরো {baggage} ফ্রি ব্যাগেজ এলাউন্স এবং চমৎকার সিটিং এক্সপেরিয়েন্স!"
+🎵 Music   : High energy rhythm drops to focus on features.
 
 
-🎬 সিন-৪ (২৫ - ৩৫ সেকেন্ড) — Call to Action
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: গাঢ় প্রিমিয়াম ব্যাকগ্রাউন্ডে:
-   📞 {phone}  |  {location or "আমাদের অফিসে আসুন"}
-   বড় বোল্ড হরফে মূল্য: {ticket_rate}
-🎥 ক্যামেরা: Static — সব মনোযোগ টেক্সটে
-🎙️ ভয়েস: "{cta}"
-   "{location + ' — আমাদের অফিসে আসুন।' if location else ''}"
-🎵 মিউজিক: জোরালো সাহসী beat — action music
+🎬 SCENE 4: URGENCY & CALL TO ACTION (00:20 - 00:26)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 Visual  : স্ক্রিনের কেন্দ্রে উজ্জ্বল নিয়ন বর্ডার লাইনের টিকেট বুথ কার্ড:
+             📞 যোগাযোগ: {phone}
+             ⚡ আসন সংখ্যা সীমিত! দ্রুত বুক করুন!
+🎥 Camera  : Snap Zoom to Action Card.
+🎙️ Voice   : "অফারটি সীমিত সময়ের জন্য! টিকিট কনফার্ম করতে এখনই কল করুন {phone} নম্বরে!"
+🎵 Music   : Fast rhythmic percussion countdown pulse.
 
 
-🎬 সিন-৫ (৩৫ - ৪৫ সেকেন্ড) — End Card
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: লোগো ও কোম্পানির নাম। বিমান আকাশে
-   মিলিয়ে যাচ্ছে — আবেগময় fade out।
-🎥 ক্যামেরা: Slow zoom-out — cinematic ending
-🎙️ ভয়েস: "আপনার স্বপ্নের গন্তব্যে পৌঁছে দিচ্ছি আমরা..."
-   "ধন্যবাদ।"
-🎵 মিউজিক: ধীরে fade out — emotional outro
+🎬 SCENE 5: BRANDING & OUTRO CARD (00:26 - 00:30)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 Visual  : ব্র্যান্ডের লোগো, হেল্পলাইন নম্বর ({phone}){loc_line} সহ বিমান উড়ে যাওয়ার প্রিমিয়াম এন্ডিং।
+🎥 Camera  : Slow Motion Cinematic Crane Out Shot.
+🎙️ Voice   : "আপনার প্রতিটি নিরাপদ ও আরামদায়ক সফরের সেরা সঙ্গী। আজই বুকিং নিশ্চিত করুন!"
+🎵 Music   : Elegant sound logo resolving fade-out.
 
 
-📺 VIDEO OVERLAY BANNER (ভিডিওতে দেখাবে)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✈️  {from_city} → {destination}
-💰  মাত্র {ticket_rate}!
-🧳  ব্যাগেজ: {baggage}
-📞  {phone}{loc_line}
+📺 OVERLAY BANNER FOR VIDEO FOOTAGE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️ {from_city} ➜ {destination}
+🔥 মাত্র {ticket_rate}  |  🧳 {baggage}
+📞 {phone}{loc_line}
 """.strip()
 
     return jsonify({"script": script, "source": "colab"})
+
 
 def start_cloudflared():
     time.sleep(2)
