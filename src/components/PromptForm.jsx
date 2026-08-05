@@ -6,16 +6,36 @@ import {
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
 
+// ✅ বাংলাদেশের সকল বিমানবন্দর শহর
 const POPULAR_CITIES = [
-  'ঢাকা (DAC)', 'চট্টগ্রাম (CGP)', 'সিলেট (ZYL)',
-  'রাজশাহী (RJH)', 'কক্সবাজার (CXB)',
+  'ঢাকা — হযরত শাহজালাল আন্তর্জাতিক (DAC)',
+  'চট্টগ্রাম — শাহ আমানত আন্তর্জাতিক (CGP)',
+  'সিলেট — ওসমানী আন্তর্জাতিক (ZYL)',
+  'কক্সবাজার — কক্সবাজার বিমানবন্দর (CXB)',
+  'যশোর — যশোর বিমানবন্দর (JSR)',
+  'রাজশাহী — শাহ মখদুম বিমানবন্দর (RJH)',
+  'বরিশাল — বরিশাল বিমানবন্দর (BZL)',
+  'সৈয়দপুর — সৈয়দপুর বিমানবন্দর (SPD)',
 ];
 
+// ✅ সৌদি আরবের সকল বিমানবন্দর শহর
 const DEST_CITIES = [
-  'Dubai (দুবাই)', 'Riyadh (রিয়াদ)', 'Jeddah (জেদ্দা)',
-  'Kuala Lumpur (কুয়ালালামপুর)', 'Bangkok (ব্যাংকক)',
-  'London (লন্ডন)', 'Singapore (সিঙ্গাপুর)', 'Istanbul (ইস্তাম্বুল)',
-  'Doha (দোহা)', 'Abu Dhabi (আবুধাবি)',
+  'Riyadh — King Khalid Intl (RUH) | রিয়াদ',
+  'Jeddah — King Abdulaziz Intl (JED) | জেদ্দা',
+  'Dammam — King Fahd Intl (DMM) | দাম্মাম',
+  'Medina — Prince Mohammad bin Abdulaziz (MED) | মদিনা',
+  'Abha — Abha Regional Airport (AHB) | আভা',
+  'Tabuk — Prince Sultan bin Abdulaziz (TUU) | তাবুক',
+  'Taif — Taif Regional Airport (TIF) | তায়েফ',
+  'Yanbu — Prince Abdul Mohsin Airport (YNB) | ইয়ানবু',
+  'Al-Qassim — Prince Nayef Airport (ELQ) | আল-কাসিম',
+  'Hail — Hail Regional Airport (HAS) | হাইল',
+  'Jizan — King Abdullah Airport (GIZ) | জিজান',
+  'Najran — Najran Domestic Airport (EAM) | নাজরান',
+  'Al-Baha — Al-Baha Domestic Airport (ABT) | আল-বাহা',
+  'Al-Jouf — Al-Jouf Domestic Airport (AJF) | আল-জুফ',
+  'Sharurah — Sharurah Domestic Airport (SHW) | শারুরাহ',
+  'Wadi ad-Dawasir — WAD Airport (WAE) | ওয়াদি আদ-দাওয়াসির',
 ];
 
 const VIBE_OPTIONS = [
