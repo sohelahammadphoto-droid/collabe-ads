@@ -1,8 +1,8 @@
 /**
- * AI Promo Studio - OpenRouter API Service (100% Free AI LLM Models & Auto Fallback Engine)
+ * AI Promo Studio - OpenRouter API Service (Dynamic Live Model Discovery & Auto-Selector)
  */
 
-export const FREE_OPENROUTER_MODELS = [
+export const STATIC_FREE_OPENROUTER_MODELS = [
   {
     id: 'google/gemini-2.0-flash-exp:free',
     name: 'Google Gemini 2.0 Flash',
@@ -35,16 +35,74 @@ export const FREE_OPENROUTER_MODELS = [
   },
 ];
 
-// Fallback order if any model slug is disabled by OpenRouter
-const FALLBACK_MODEL_SLUGS = [
-  'google/gemini-2.0-flash-exp:free',
-  'deepseek/deepseek-r1:free',
-  'qwen/qwen-2.5-72b-instruct:free',
-  'meta-llama/llama-3.1-70b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
-];
+export let FREE_OPENROUTER_MODELS = [...STATIC_FREE_OPENROUTER_MODELS];
 
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+let cachedLiveModels = null;
+let lastFetchTime = 0;
+
+const OPENROUTER_MODELS_API = 'https://openrouter.ai/api/v1/models';
+const OPENROUTER_API_URL    = 'https://openrouter.ai/api/v1/chat/completions';
+
+/**
+ * 🌐 DYNAMIC LIVE FREE MODELS DISCOVERY
+ * OpenRouter-এর পাবলিক API থেকে লাইভ সচল ফ্রি মডেলসমূহ স্বয়ংক্রিয়ভাবে লোড করার ফাংশন
+ */
+export async function fetchLiveFreeModels(forceRefresh = false) {
+  const now = Date.now();
+  // Cache for 10 minutes unless force refreshed
+  if (cachedLiveModels && !forceRefresh && (now - lastFetchTime < 10 * 60 * 1000)) {
+    return cachedLiveModels;
+  }
+
+  try {
+    const res = await fetch(OPENROUTER_MODELS_API);
+    if (!res.ok) throw new Error(`HTTP Status ${res.status}`);
+    const data = await res.json();
+    const rawList = data.data || [];
+
+    // Filter 100% free models
+    const freeList = rawList.filter(m => {
+      const isFreeSlug = m.id && m.id.endsWith(':free');
+      const isFreePricing = m.pricing && parseFloat(m.pricing.prompt) === 0 && parseFloat(m.pricing.completion) === 0;
+      return isFreeSlug || isFreePricing;
+    });
+
+    if (freeList.length > 0) {
+      const formatted = freeList.map(m => {
+        let cleanName = m.name || m.id;
+        cleanName = cleanName.replace(':free', '').replace(' (free)', '');
+        return {
+          id: m.id,
+          name: cleanName,
+          badge: '১০০% ফ্রি লাইভ',
+          desc: m.description ? (m.description.slice(0, 65) + '...') : 'OpenRouter লাইভ সচল ফ্রি এআই মডেল',
+        };
+      });
+
+      // Sort so top providers (Google, DeepSeek, Qwen, Meta, Mistral) come first
+      formatted.sort((a, b) => {
+        const priority = ['gemini', 'deepseek', 'qwen', 'llama', 'mistral'];
+        const aIndex = priority.findIndex(p => a.id.toLowerCase().includes(p));
+        const bIndex = priority.findIndex(p => b.id.toLowerCase().includes(p));
+        const aP = aIndex === -1 ? 99 : aIndex;
+        const bP = bIndex === -1 ? 99 : bIndex;
+        return aP - bP;
+      });
+
+      cachedLiveModels = formatted;
+      FREE_OPENROUTER_MODELS = formatted;
+      lastFetchTime = now;
+      console.log(`✅ OpenRouter থেকে ${formatted.length}টি লাইভ ফ্রি মডেল স্বয়ংক্রিয়ভাবে লোড করা হয়েছে!`, formatted);
+      return formatted;
+    }
+  } catch (err) {
+    console.warn('⚠️ OpenRouter লাইভ মডেল লোড করতে সমস্যা, লোকাল ব্যাকআপ মডেল ব্যবহৃত হচ্ছে:', err);
+  }
+
+  cachedLiveModels = STATIC_FREE_OPENROUTER_MODELS;
+  FREE_OPENROUTER_MODELS = STATIC_FREE_OPENROUTER_MODELS;
+  return STATIC_FREE_OPENROUTER_MODELS;
+}
 
 /**
  * Duration options label helper
@@ -60,13 +118,20 @@ export function getDurationLabel(dur) {
 }
 
 /**
- * Quick verification of AI Agents Team Health
+ * AI Agents Team Health Verification (Dynamically uses Live Free Models)
  */
 export async function verifyAgentTeamHealth(apiKey) {
+  const liveModels = await fetchLiveFreeModels();
+  
+  // Dynamically select top 3 active free models
+  const agent1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) || liveModels[1] || liveModels[0];
+  const agent2 = liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
+  const agent3 = liveModels.find(m => m.id.includes('qwen') || m.id.includes('llama')) || liveModels[2] || liveModels[0];
+
   const agentModels = [
-    { id: 'deepseek/deepseek-r1:free', name: 'Agent 1: DeepSeek R1' },
-    { id: 'google/gemini-2.0-flash-exp:free', name: 'Agent 2: Gemini 2.0' },
-    { id: 'qwen/qwen-2.5-72b-instruct:free', name: 'Agent 3: Qwen 2.5 72B' },
+    { id: agent1.id, name: agent1.name },
+    { id: agent2.id, name: agent2.name },
+    { id: agent3.id, name: agent3.name },
   ];
 
   const headers = {
@@ -105,14 +170,16 @@ export async function verifyAgentTeamHealth(apiKey) {
 }
 
 /**
- * OpenRouter এর সিঙ্গেল ফ্রি AI মডেল দিয়ে বিজ্ঞাপন স্ক্রিপ্ট তৈরি (Auto-Fallback সহ)
+ * OpenRouter এর সিঙ্গেল ফ্রি AI মডেল দিয়ে বিজ্ঞাপন স্ক্রিপ্ট তৈরি (Dynamic Auto-Fallback সহ)
  */
 export async function generateOpenRouterScript(payload, apiKey, modelId) {
   const startTime = Date.now();
-  
+  const liveModels = await fetchLiveFreeModels();
+  const fallbackSlugs = liveModels.map(m => m.id);
+
   // Create ordered list of models to try
-  const targetModel = modelId && !modelId.includes('llama-3.3') ? modelId : FREE_OPENROUTER_MODELS[0].id;
-  const modelsToTry = Array.from(new Set([targetModel, ...FALLBACK_MODEL_SLUGS]));
+  const targetModel = modelId && !modelId.includes('llama-3.3') ? modelId : fallbackSlugs[0];
+  const modelsToTry = Array.from(new Set([targetModel, ...fallbackSlugs]));
 
   const headers = {
     'Content-Type': 'application/json',
@@ -200,7 +267,7 @@ Keep numbers, route details (${fromCity} ➜ ${destination}), ticket price (${ti
       }
 
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      const modelObj = FREE_OPENROUTER_MODELS.find(m => m.id === currentSlug);
+      const modelObj = liveModels.find(m => m.id === currentSlug);
       const displayName = modelObj ? modelObj.name : currentSlug.split('/')[1]?.split(':')[0] || currentSlug;
 
       return {
@@ -220,10 +287,17 @@ Keep numbers, route details (${fromCity} ➜ ${destination}), ticket price (${ti
 }
 
 /**
- * 🤖 AGENT MODE (Multi-AI Team Collaboration Engine with Live Tickmark Callbacks)
+ * 🤖 DYNAMIC AGENT MODE (Multi-AI Team Collaboration Engine using Live Discovered Free Models)
  */
 export async function generateMultiAgentScript(payload, apiKey, onProgress) {
   const startTime = Date.now();
+  const liveModels = await fetchLiveFreeModels();
+
+  // Dynamically select 3 distinct live models
+  const m1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) || liveModels[1] || liveModels[0];
+  const m2 = liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
+  const m3 = liveModels.find(m => m.id.includes('qwen') || m.id.includes('llama')) || liveModels[2] || liveModels[0];
+
   const headers = {
     'Content-Type': 'application/json',
     'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://aipromostudio.local',
@@ -246,17 +320,16 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
   } = payload || {};
 
   const durationText = getDurationLabel(duration);
-
   const completedAgents = [];
 
-  // STEP 1: DeepSeek R1 / Gemini (Strategy Agent)
-  if (onProgress) onProgress('⏳ Agent 1: DeepSeek R1 — ক্রিয়েটিভ কনসেপ্ট তৈরি হচ্ছে...', completedAgents);
+  // STEP 1: Concept Agent
+  if (onProgress) onProgress(`⏳ Agent 1: ${m1.name} — ক্রিয়েটিভ কনসেপ্ট তৈরি হচ্ছে...`, completedAgents);
 
   let concept = '';
-  const agent1Models = ['deepseek/deepseek-r1:free', 'google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free'];
-  let agent1Used = 'DeepSeek R1';
+  const agent1Slugs = [m1.id, m2.id, m3.id];
+  let agent1Used = m1.name;
 
-  for (const mSlug of agent1Models) {
+  for (const mSlug of agent1Slugs) {
     try {
       const res1 = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -276,7 +349,7 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
         const data1 = await res1.json();
         concept = data1?.choices?.[0]?.message?.content || '';
         if (concept) {
-          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          const mObj = liveModels.find(m => m.id === mSlug);
           if (mObj) agent1Used = mObj.name;
           break;
         }
@@ -288,14 +361,14 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
 
   completedAgents.push(`✅ ${agent1Used} (Concept Agent) — সম্পন্ন`);
 
-  // STEP 2: Gemini / Qwen (Copywriting Agent)
-  if (onProgress) onProgress('⏳ Agent 2: Gemini 2.0 — বাংলা ভয়েসওভার ও টেক্সট তৈরি হচ্ছে...', completedAgents);
+  // STEP 2: Copywriting Agent
+  if (onProgress) onProgress(`⏳ Agent 2: ${m2.name} — বাংলা ভয়েসওভার ও টেক্সট তৈরি হচ্ছে...`, completedAgents);
 
   let copy = '';
-  const agent2Models = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'meta-llama/llama-3.1-70b-instruct:free'];
-  let agent2Used = 'Gemini 2.0 Flash';
+  const agent2Slugs = [m2.id, m3.id, m1.id];
+  let agent2Used = m2.name;
 
-  for (const mSlug of agent2Models) {
+  for (const mSlug of agent2Slugs) {
     try {
       const res2 = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -315,7 +388,7 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
         const data2 = await res2.json();
         copy = data2?.choices?.[0]?.message?.content || '';
         if (copy) {
-          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          const mObj = liveModels.find(m => m.id === mSlug);
           if (mObj) agent2Used = mObj.name;
           break;
         }
@@ -327,8 +400,8 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
 
   completedAgents.push(`✅ ${agent2Used} (Copywriter Agent) — সম্পন্ন`);
 
-  // STEP 3: Master Synthesis Agent
-  if (onProgress) onProgress('⏳ Agent 3: Qwen 2.5 72B — চূড়ান্ত সমন্বিত স্টোরিবোর্ড প্রস্তুত করছে...', completedAgents);
+  // STEP 3: Master Director Agent
+  if (onProgress) onProgress(`⏳ Agent 3: ${m3.name} — চূড়ান্ত সমন্বিত স্টোরিবোর্ড প্রস্তুত করছে...`, completedAgents);
 
   const masterPrompt = `You are the Lead Master Director Agent synthesizing creative work into a master 5-scene commercial ad script in fluent Bengali.
 
@@ -346,10 +419,10 @@ Voiceover Notes: ${copy.slice(0, 400)}
 
 Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, 🎙️ Voice, 🎵 Music), and 📺 OVERLAY BANNER FOR VIDEO FOOTAGE summary.`;
 
-  const masterModels = ['qwen/qwen-2.5-72b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'meta-llama/llama-3.1-70b-instruct:free'];
-  let agent3Used = 'Qwen 2.5 72B';
+  const agent3Slugs = [m3.id, m2.id, m1.id];
+  let agent3Used = m3.name;
 
-  for (const mSlug of masterModels) {
+  for (const mSlug of agent3Slugs) {
     try {
       const res3 = await fetch(OPENROUTER_API_URL, {
         method: 'POST',
@@ -369,16 +442,16 @@ Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, �
         const data3 = await res3.json();
         const finalScript = data3?.choices?.[0]?.message?.content;
         if (finalScript) {
-          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          const mObj = liveModels.find(m => m.id === mSlug);
           if (mObj) agent3Used = mObj.name;
           completedAgents.push(`✅ ${agent3Used} (Master Agent) — সম্পন্ন`);
           
-          if (onProgress) onProgress('🎉 সব AI এজেন্ট সফলভাবে স্ক্রিপ্ট প্রস্তুত করেছে!', completedAgents);
+          if (onProgress) onProgress('🎉 সব AI এজেন্ট সফলভাবে লাইভ স্ক্রিপ্ট প্রস্তুত করেছে!', completedAgents);
 
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
           return {
             script: finalScript.trim(),
-            modelName: 'Multi-AI Agent Team (DeepSeek + Gemini + Qwen)',
+            modelName: `Multi-AI Agent Team (${agent1Used} + ${agent2Used} + ${agent3Used})`,
             modelId: 'multi-agent-team',
             elapsedTime: `${elapsedTime}s`,
             isLive: true,
@@ -393,15 +466,16 @@ Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, �
   }
 
   // Final fallback to single model generator
-  return await generateOpenRouterScript(payload, apiKey, 'google/gemini-2.0-flash-exp:free');
+  return await generateOpenRouterScript(payload, apiKey, m2.id);
 }
 
 /**
  * OpenRouter সংযোগ এবং API Key পরীক্ষার ফাংশন
  */
 export async function testOpenRouterConnection(apiKey, modelId) {
-  const targetModel = modelId && !modelId.includes('llama-3.3') ? modelId : FREE_OPENROUTER_MODELS[0].id;
-  const modelsToTry = Array.from(new Set([targetModel, ...FALLBACK_MODEL_SLUGS]));
+  const liveModels = await fetchLiveFreeModels();
+  const targetModel = modelId || liveModels[0].id;
+  const modelsToTry = Array.from(new Set([targetModel, ...liveModels.map(m => m.id)]));
 
   const headers = {
     'Content-Type': 'application/json',
@@ -432,7 +506,7 @@ export async function testOpenRouterConnection(apiKey, modelId) {
       if (res.ok) {
         const data = await res.json();
         const text = data?.choices?.[0]?.message?.content || 'সফলভবে যুক্ত হয়েছে!';
-        const modelObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+        const modelObj = liveModels.find(m => m.id === mSlug);
         const name = modelObj ? modelObj.name : mSlug;
         return { success: true, text: `[${name}] ${text.trim()}` };
       } else {

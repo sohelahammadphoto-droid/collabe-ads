@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Settings, Save, CheckCircle2, AlertCircle, RefreshCw,
   Cpu, ExternalLink, HelpCircle, Key, Eye, EyeOff, Sparkles, Zap
@@ -9,7 +9,7 @@ import {
   getStoredOpenRouterKey, saveOpenRouterKey,
   getStoredOpenRouterModel, saveOpenRouterModel
 } from '../services/storage';
-import { FREE_OPENROUTER_MODELS, testOpenRouterConnection } from '../services/openrouter';
+import { FREE_OPENROUTER_MODELS, fetchLiveFreeModels, testOpenRouterConnection } from '../services/openrouter';
 
 export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, isConnected, setIsConnected }) {
   const [urlInput, setUrlInput]             = useState(colabUrl || '');
@@ -28,6 +28,23 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
   const [orSaved, setOrSaved]                 = useState(false);
   const [orTesting, setOrTesting]             = useState(false);
   const [orTestResult, setOrTestResult]       = useState(null);
+
+  // Dynamic Models list state
+  const [modelList, setModelList]             = useState(FREE_OPENROUTER_MODELS);
+  const [loadingModels, setLoadingModels]     = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoadingModels(true);
+    fetchLiveFreeModels()
+      .then((list) => {
+        setModelList(list);
+        if (list && list.length > 0 && !list.find(m => m.id === selectedModel)) {
+          setSelectedModel(list[0].id);
+        }
+      })
+      .finally(() => setLoadingModels(false));
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -96,39 +113,50 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-100">সেটিংস</h3>
-              <p className="text-xs text-slate-400">OpenRouter (100% Free AI), Gemini ও Colab কনফিগার করুন</p>
+              <p className="text-xs text-slate-400">OpenRouter (Dynamic Live Free AI), Gemini ও Colab কনফিগার করুন</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">✕</button>
         </div>
 
-        {/* ── Section 1: OpenRouter AI (100% FREE LLM) ── */}
+        {/* ── Section 1: OpenRouter AI (DYNAMIC LIVE FREE LLM) ── */}
         <div className="space-y-4 p-4 bg-purple-950/20 border border-purple-500/30 rounded-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-purple-300">
               <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>OpenRouter AI — ১০০% ফ্রি স্ক্রিপ্ট ইঞ্জিন</span>
+              <span>OpenRouter AI — ডাইনামিক সচল ফ্রি মডেল</span>
             </div>
-            <span className="text-[10px] font-semibold px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full">
-              ফ্রি LLM সাপোর্ট
+            <span className="text-[10px] font-semibold px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full flex items-center gap-1">
+              {loadingModels && <RefreshCw className="w-2.5 h-2.5 animate-spin" />}
+              <span>{loadingModels ? 'লাইভ লোড হচ্ছে...' : `${modelList.length}টি লাইভ ফ্রি AI`}</span>
             </span>
           </div>
 
           <p className="text-xs text-slate-300 leading-relaxed">
-            OpenRouter ব্যবহার করে DeepSeek R1, Meta Llama 3.3 70B বা Gemini-র মতো ১০০% ফ্রি AI মডেল দিয়ে অতি আকর্ষণীয় বাণিজ্যিক স্ক্রিপ্ট তৈরি করতে পারবেন।
+            OpenRouter API থেকে লাইভ সচল ১০০% ফ্রি এআই মডেলসমূহ অটো-ডিটেক্ট করা হয়। কোনো মডেল হাডকোড করা নেই!
           </p>
 
-          {/* Model Selector */}
+          {/* Dynamic Model Selector */}
           <div>
-            <label className="block text-xs font-semibold text-purple-200 mb-1.5">
-              ফ্রি AI মডেল নির্বাচন করুন:
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-purple-200">
+                সচল ফ্রি AI মডেল (অটো-ডিটেক্টেড):
+              </label>
+              <button
+                type="button"
+                onClick={() => { setLoadingModels(true); fetchLiveFreeModels(true).then(list => setModelList(list)).finally(() => setLoadingModels(false)); }}
+                className="text-[10px] text-purple-400 hover:text-purple-300 flex items-center gap-1"
+              >
+                <RefreshCw className={`w-2.5 h-2.5 ${loadingModels ? 'animate-spin' : ''}`} />
+                <span>মডেল রিফ্রেশ</span>
+              </button>
+            </div>
             <select
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full bg-[#0b0f19] border border-purple-500/40 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-400"
+              className="w-full bg-[#0b0f19] border border-purple-500/40 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-400 font-medium"
             >
-              {FREE_OPENROUTER_MODELS.map((m) => (
+              {modelList.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.name} [{m.badge}] — {m.desc}
                 </option>
