@@ -60,6 +60,51 @@ export function getDurationLabel(dur) {
 }
 
 /**
+ * Quick verification of AI Agents Team Health
+ */
+export async function verifyAgentTeamHealth(apiKey) {
+  const agentModels = [
+    { id: 'deepseek/deepseek-r1:free', name: 'Agent 1: DeepSeek R1' },
+    { id: 'google/gemini-2.0-flash-exp:free', name: 'Agent 2: Gemini 2.0' },
+    { id: 'qwen/qwen-2.5-72b-instruct:free', name: 'Agent 3: Qwen 2.5 72B' },
+  ];
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://aipromostudio.local',
+    'X-Title': 'AI Promo Studio Agent Check',
+  };
+
+  if (apiKey && apiKey.trim()) {
+    headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+  }
+
+  try {
+    const checks = await Promise.all(agentModels.map(async (agent) => {
+      try {
+        const res = await fetch(OPENROUTER_API_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            model: agent.id,
+            messages: [{ role: 'user', content: 'test' }],
+            max_tokens: 5,
+          }),
+        });
+        return { ...agent, ok: res.ok };
+      } catch {
+        return { ...agent, ok: false };
+      }
+    }));
+
+    const allOk = checks.every(c => c.ok);
+    return { allOk, checks };
+  } catch {
+    return { allOk: false, checks: agentModels.map(a => ({ ...a, ok: false })) };
+  }
+}
+
+/**
  * OpenRouter এর সিঙ্গেল ফ্রি AI মডেল দিয়ে বিজ্ঞাপন স্ক্রিপ্ট তৈরি (Auto-Fallback সহ)
  */
 export async function generateOpenRouterScript(payload, apiKey, modelId) {
@@ -144,7 +189,7 @@ Keep numbers, route details (${fromCity} ➜ ${destination}), ticket price (${ti
         const errorMsg = errData?.error?.message || `Status: ${res.status}`;
         lastError = new Error(errorMsg);
         console.warn(`Model ${currentSlug} failed, trying fallback model... (${errorMsg})`);
-        continue; // Try next fallback model
+        continue;
       }
 
       const data = await res.json();
@@ -175,7 +220,7 @@ Keep numbers, route details (${fromCity} ➜ ${destination}), ticket price (${ti
 }
 
 /**
- * 🤖 AGENT MODE (Multi-AI Team Collaboration Engine with Auto-Fallback)
+ * 🤖 AGENT MODE (Multi-AI Team Collaboration Engine with Live Tickmark Callbacks)
  */
 export async function generateMultiAgentScript(payload, apiKey, onProgress) {
   const startTime = Date.now();
@@ -202,11 +247,15 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
 
   const durationText = getDurationLabel(duration);
 
+  const completedAgents = [];
+
   // STEP 1: DeepSeek R1 / Gemini (Strategy Agent)
-  if (onProgress) onProgress('🤖 Agent 1: DeepSeek R1 / Gemini — ক্রিয়েটিভ এড কনসেপ্ট ও হুক তৈরি করছে...');
+  if (onProgress) onProgress('⏳ Agent 1: DeepSeek R1 — ক্রিয়েটিভ কনসেপ্ট তৈরি হচ্ছে...', completedAgents);
 
   let concept = '';
   const agent1Models = ['deepseek/deepseek-r1:free', 'google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free'];
+  let agent1Used = 'DeepSeek R1';
+
   for (const mSlug of agent1Models) {
     try {
       const res1 = await fetch(OPENROUTER_API_URL, {
@@ -226,18 +275,26 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
       if (res1.ok) {
         const data1 = await res1.json();
         concept = data1?.choices?.[0]?.message?.content || '';
-        if (concept) break;
+        if (concept) {
+          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          if (mObj) agent1Used = mObj.name;
+          break;
+        }
       }
     } catch (e) {
       console.warn('Agent 1 fallback:', e);
     }
   }
 
+  completedAgents.push(`✅ ${agent1Used} (Concept Agent) — সম্পন্ন`);
+
   // STEP 2: Gemini / Qwen (Copywriting Agent)
-  if (onProgress) onProgress('🤖 Agent 2: Gemini 2.0 / Qwen 2.5 — কমার্শিয়াল বাংলা ভয়েসওভার কপি লিখছে...');
+  if (onProgress) onProgress('⏳ Agent 2: Gemini 2.0 — বাংলা ভয়েসওভার ও টেক্সট তৈরি হচ্ছে...', completedAgents);
 
   let copy = '';
   const agent2Models = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'meta-llama/llama-3.1-70b-instruct:free'];
+  let agent2Used = 'Gemini 2.0 Flash';
+
   for (const mSlug of agent2Models) {
     try {
       const res2 = await fetch(OPENROUTER_API_URL, {
@@ -257,15 +314,21 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
       if (res2.ok) {
         const data2 = await res2.json();
         copy = data2?.choices?.[0]?.message?.content || '';
-        if (copy) break;
+        if (copy) {
+          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          if (mObj) agent2Used = mObj.name;
+          break;
+        }
       }
     } catch (e) {
       console.warn('Agent 2 fallback:', e);
     }
   }
 
+  completedAgents.push(`✅ ${agent2Used} (Copywriter Agent) — সম্পন্ন`);
+
   // STEP 3: Master Synthesis Agent
-  if (onProgress) onProgress('🤖 Agent 3: Lead AI Master Agent — চূড়ান্ত স্টোরিবোর্ড প্রস্তুত করছে...');
+  if (onProgress) onProgress('⏳ Agent 3: Qwen 2.5 72B — চূড়ান্ত সমন্বিত স্টোরিবোর্ড প্রস্তুত করছে...', completedAgents);
 
   const masterPrompt = `You are the Lead Master Director Agent synthesizing creative work into a master 5-scene commercial ad script in fluent Bengali.
 
@@ -283,7 +346,9 @@ Voiceover Notes: ${copy.slice(0, 400)}
 
 Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, 🎙️ Voice, 🎵 Music), and 📺 OVERLAY BANNER FOR VIDEO FOOTAGE summary.`;
 
-  const masterModels = ['google/gemini-2.0-flash-exp:free', 'qwen/qwen-2.5-72b-instruct:free', 'meta-llama/llama-3.1-70b-instruct:free'];
+  const masterModels = ['qwen/qwen-2.5-72b-instruct:free', 'google/gemini-2.0-flash-exp:free', 'meta-llama/llama-3.1-70b-instruct:free'];
+  let agent3Used = 'Qwen 2.5 72B';
+
   for (const mSlug of masterModels) {
     try {
       const res3 = await fetch(OPENROUTER_API_URL, {
@@ -304,6 +369,12 @@ Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, �
         const data3 = await res3.json();
         const finalScript = data3?.choices?.[0]?.message?.content;
         if (finalScript) {
+          const mObj = FREE_OPENROUTER_MODELS.find(m => m.id === mSlug);
+          if (mObj) agent3Used = mObj.name;
+          completedAgents.push(`✅ ${agent3Used} (Master Agent) — সম্পন্ন`);
+          
+          if (onProgress) onProgress('🎉 সব AI এজেন্ট সফলভাবে স্ক্রিপ্ট প্রস্তুত করেছে!', completedAgents);
+
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
           return {
             script: finalScript.trim(),
@@ -312,6 +383,7 @@ Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, �
             elapsedTime: `${elapsedTime}s`,
             isLive: true,
             isAgentMode: true,
+            completedAgents,
           };
         }
       }
