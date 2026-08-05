@@ -607,9 +607,10 @@ def generate_script():
 def start_cloudflared():
     time.sleep(2)
     print("\n" + "="*70)
-    print("🚀 [4/4] Cloudflare Tunnel চালু হচ্ছে...")
+    print("🚀 [4/4] Cloudflare Tunnel (TryCloudflare) চালু হচ্ছে...")
     print("="*70)
     
+    # Run cloudflared tunnel
     proc = subprocess.Popen(
         ["./cloudflared", "tunnel", "--url", "http://localhost:8000"],
         stdout=subprocess.PIPE,
@@ -620,15 +621,17 @@ def start_cloudflared():
     tunnel_url = None
     for line in iter(proc.stdout.readline, ''):
         print(line, end="")
-        match = re.search(r"https://[-a-zA-Z0-9.]+\.trycloudflare\.com", line)
-        if match:
-            tunnel_url = match.group(0)
-            print("\n" + "🎉"*30)
-            print(f"✨ আপনার AI Promo Studio Colab URL প্রস্তুত:")
-            print(f"👉  {tunnel_url}  👈")
-            print("পাসওয়ার্ড বা কি-এর প্রয়োজন নেই। এই URL-টি অ্যাপের সেটিংসে বসান!")
-            print("🎉"*30 + "\n")
-            break
+        # Exclude system domains like api.trycloudflare.com
+        matches = re.findall(r"https://[a-zA-Z0-9-]+\.trycloudflare\.com", line)
+        for m in matches:
+            if "api.trycloudflare.com" not in m:
+                tunnel_url = m
+                print("\n" + "🎉"*35)
+                print("✨ আপনার AI Promo Studio Colab URL সফলভাবে প্রস্তুত হয়েছে:")
+                print(f"👉  {tunnel_url}  👈")
+                print("এই আসল URL-টি কপি করে অ্যাপের সেটিংসে (Cloudflare Public URL) বসান!")
+                print("🎉"*35 + "\n")
+                return
 
 if __name__ == "__main__":
     print("🌟 AI Promo Studio Colab সার্ভার প্রস্তুত করা হচ্ছে...")
