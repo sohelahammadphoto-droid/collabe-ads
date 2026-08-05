@@ -479,6 +479,131 @@ def get_job_video(job_id: str):
         
     return send_file(video_path, mimetype="video/mp4")
 
+# ─────────────────────────────────────────────────────────────────────────────
+# GENERATE SCRIPT ENDPOINT — পুরো বাংলা স্ক্রিপ্ট তৈরি করে (কোনো AI মডেল ছাড়া)
+# ─────────────────────────────────────────────────────────────────────────────
+@app.route("/generate-script", methods=["POST", "OPTIONS"])
+def generate_script():
+    if request.method == "OPTIONS":
+        return "", 200
+
+    data        = request.json or {}
+    from_city   = data.get("fromCity", "Origin").strip()
+    destination = data.get("destination", "Destination").strip()
+    ticket_rate = data.get("ticketRate", "বিশেষ মূল্যে").strip()
+    baggage     = data.get("baggage", "২০ কেজি").strip()
+    phone       = data.get("phone", "যোগাযোগ করুন").strip()
+    location    = data.get("location", "").strip()
+    vibe        = data.get("vibe", "cinematic sunset").strip()
+
+    import random
+
+    # ── ক্রিয়েটিভ ওপেনিং লাইন ──
+    openers = [
+        "স্বপ্নের যাত্রা শুরু হোক...",
+        f"{from_city} থেকে {destination} — একটি অবিস্মরণীয় যাত্রার গল্প",
+        "আকাশের পথে স্বদেশের টান...",
+        f"প্রিয়জনের কাছে ফিরে যাওয়ার সময় হয়েছে!",
+        "দূরত্ব এখন শুধু একটি টিকেটের ব্যবধান...",
+    ]
+    opener = random.choice(openers)
+
+    # ── ক্রিয়েটিভ CTA ──
+    ctas = [
+        f"আর দেরি নয় — এখনই {phone}-এ কল করুন!",
+        f"সীমিত আসন! {phone} — আজই বুক করুন",
+        f"এই সুযোগ মিস করবেন না। ফোন করুন: {phone}",
+        f"আপনার সিট রিজার্ভ করুন এখনই — {phone}",
+    ]
+    cta = random.choice(ctas)
+
+    # ── সিন-১ ভিজ্যুয়াল ──
+    scene1_visuals = [
+        f"{from_city}-এর আকাশসীমা — {vibe} আলোয় বিমান উড়ছে। ধীরে ধীরে zoom-in।",
+        f"সূর্যাস্তের পটভূমিতে {from_city}-এর শহর। দূরে একটি বিমান মিলিয়ে যাচ্ছে।",
+        f"{from_city}-এর বিমানবন্দর — রানওয়েতে বিমান প্রস্তুত। গোলাপি সন্ধ্যার আলো।",
+    ]
+    scene1_v = random.choice(scene1_visuals)
+
+    loc_line = f" | {location}" if location else ""
+
+    script = f"""
+╔══════════════════════════════════════════════╗
+   ✈️  ফ্লাইট প্রমো ভিডিও — সম্পূর্ণ স্ক্রিপ্ট
+   {from_city} ➜ {destination}
+╚══════════════════════════════════════════════╝
+
+📋 ভিডিও ইনফো
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+রুট      : {from_city} → {destination}
+মূল্য    : {ticket_rate}
+ব্যাগেজ  : {baggage}
+ফোন      : {phone}
+লোকেশন  : {location or "—"}
+ভাইব     : {vibe}
+মোট সময় : ৩০ - ৪৫ সেকেন্ড
+
+
+🎬 সিন-১ (০ - ৬ সেকেন্ড) — ওপেনিং শট
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 ভিজ্যুয়াল: {scene1_v}
+🎥 ক্যামেরা: Slow drone pull-back shot — উপর থেকে নিচে
+🎙️ ভয়েস: "{opener}"
+🎵 মিউজিক: Soft emotional cinematic — ধীরে শুরু
+
+
+🎬 সিন-২ (৬ - ১৫ সেকেন্ড) — অফার রিভিল
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 ভিজ্যুয়াল: {destination}-এর বিখ্যাত দৃশ্য। সোনালি আলোয়
+   শহর ঝলমলে। স্ক্রিনে text animation:
+   ✈️ "{from_city} → {destination}"
+🎥 ক্যামেরা: Aerial flyover — শহরের উপর দিয়ে
+🎙️ ভয়েস: "{from_city} থেকে {destination}!"
+   "এখন মাত্র {ticket_rate}!"
+🎵 মিউজিক: একটু জোরালো — excitement build করছে
+
+
+🎬 সিন-৩ (১৫ - ২৫ সেকেন্ড) — সুবিধা দেখানো
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 ভিজ্যুয়াল: বিমানের ভেতরে আরামদায়ক সিট।
+   নিচে text: "🧳 ব্যাগেজ: {baggage}" | "✈️ সীমিত আসন!"
+🎥 ক্যামেরা: Close-up থেকে wide — smooth pan
+🎙️ ভয়েস: "{baggage} ব্যাগেজ সহ পরিপূর্ণ প্যাকেজ!"
+   "সীমিত আসন — এখনই সুযোগ নিন!"
+🎵 মিউজিক: উত্তেজনাপূর্ণ — peak moment
+
+
+🎬 সিন-৪ (২৫ - ৩৫ সেকেন্ড) — Call to Action
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 ভিজ্যুয়াল: গাঢ় প্রিমিয়াম ব্যাকগ্রাউন্ডে:
+   📞 {phone}  |  {location or "আমাদের অফিসে আসুন"}
+   বড় বোল্ড হরফে মূল্য: {ticket_rate}
+🎥 ক্যামেরা: Static — সব মনোযোগ টেক্সটে
+🎙️ ভয়েস: "{cta}"
+   "{location + ' — আমাদের অফিসে আসুন।' if location else ''}"
+🎵 মিউজিক: জোরালো সাহসী beat — action music
+
+
+🎬 সিন-৫ (৩৫ - ৪৫ সেকেন্ড) — End Card
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📷 ভিজ্যুয়াল: লোগো ও কোম্পানির নাম। বিমান আকাশে
+   মিলিয়ে যাচ্ছে — আবেগময় fade out।
+🎥 ক্যামেরা: Slow zoom-out — cinematic ending
+🎙️ ভয়েস: "আপনার স্বপ্নের গন্তব্যে পৌঁছে দিচ্ছি আমরা..."
+   "ধন্যবাদ।"
+🎵 মিউজিক: ধীরে fade out — emotional outro
+
+
+📺 VIDEO OVERLAY BANNER (ভিডিওতে দেখাবে)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️  {from_city} → {destination}
+💰  মাত্র {ticket_rate}!
+🧳  ব্যাগেজ: {baggage}
+📞  {phone}{loc_line}
+""".strip()
+
+    return jsonify({"script": script, "source": "colab"})
+
 def start_cloudflared():
     time.sleep(2)
     print("\n" + "="*70)

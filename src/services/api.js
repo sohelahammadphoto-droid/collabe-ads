@@ -45,6 +45,26 @@ export const checkHealth = async (baseUrl) => {
   }
 };
 
+// Generate custom Bangla script from Colab backend
+export const generateScriptApi = async (baseUrl, payload) => {
+  const cleanUrl = sanitizeUrl(baseUrl);
+  if (!cleanUrl) return null;
+
+  try {
+    const res = await fetch(`${cleanUrl}/generate-script`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.script || null;
+  } catch (err) {
+    console.error('Failed to generate script from Colab backend:', err);
+    return null;
+  }
+};
+
 // Submit new video generation job
 export const submitJob = async (baseUrl, { video_model, prompt }) => {
   const cleanUrl = sanitizeUrl(baseUrl);

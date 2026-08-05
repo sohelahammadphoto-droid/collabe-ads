@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, CheckCircle2, Rocket, Phone, MapPin, Film, Mic, Eye as EyeIcon, Clock, RefreshCw, AlertCircle } from 'lucide-react';
-import { getStoredGeminiKey } from '../services/storage';
+import { X, CheckCircle2, Rocket, Phone, MapPin, Film, Mic, Eye as EyeIcon, Clock, RefreshCw, Cpu } from 'lucide-react';
+import { getStoredColabUrl } from '../services/storage';
+import { generateScriptApi } from '../services/api';
 
-// ── Fallback template (used when no Gemini key) ──────────────────────────────
+// ── Fallback script generator ────────────────────────────────────────────────
 function buildFallbackScript(payload) {
   const { fromCity = '', destination = '', ticketRate = '', baggage = '', phone = '', location = '', vibe = '' } = payload || {};
   const price = ticketRate || 'বিশেষ মূল্যে';
@@ -22,48 +23,50 @@ function buildFallbackScript(payload) {
 মূল্য    : ${price}
 ব্যাগেজ  : ${bag}
 ফোন      : ${tel}
-লোকেশন  : ${addr}
+লোকেশন  : ${addr || "—"}
 ভাইব     : ${vibe}
 মোট সময় : ৩০ - ৪৫ সেকেন্ড
 
 
-🎬 সিন-১ (০ - ৫ সেকেন্ড) — ওপেনিং শট
+🎬 সিন-১ (০ - ৬ সেকেন্ড) — ওপেনিং শট
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: ${fromCity}-এর আকাশসীমা, বিমান উড়ে যাচ্ছে — ${vibe} আলো
+📷 ভিজ্যুয়াল: ${fromCity}-এর আকাশসীমা — ${vibe} আলোয় বিমান উড়ছে।
 🎥 ক্যামেরা: Slow drone pull-back shot
 🎙️ ভয়েস: "স্বপ্নের যাত্রা শুরু হোক..."
-🎵 মিউজিক: Soft cinematic — আস্তে শুরু
+🎵 মিউজিক: Soft emotional cinematic — ধীরে শুরু
 
 
-🎬 সিন-২ (৫ - ১৫ সেকেন্ড) — অফার রিভিল
+🎬 সিন-২ (৬ - ১৫ সেকেন্ড) — অফার রিভিল
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: ${destination}-এর বিখ্যাত দৃশ্য, সোনালি আলোয় শহর
-🎥 ক্যামেরা: Aerial flyover
-🎙️ ভয়েস: "${fromCity} থেকে ${destination} — মাত্র ${price}!"
-🎵 মিউজিক: একটু জোরালো — excitement build
+📷 ভিজ্যুয়াল: ${destination}-এর বিখ্যাত দৃশ্য। সোনালি আলোয় শহর ঝলমলে।
+   ✈️ "${fromCity} → ${destination}"
+🎥 ক্যামেরা: Aerial flyover — শহরের উপর দিয়ে
+🎙️ ভয়েস: "${fromCity} থেকে ${destination}! এখন মাত্র ${price}!"
+🎵 মিউজিক: আনন্দদায়ক বিট — excitement build
 
 
-🎬 সিন-৩ (১৫ - ২৫ সেকেন্ড) — সুবিধাসমূহ
+🎬 সিন-৩ (১৫ - ২৫ সেকেন্ড) — সুবিধা দেখানো
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: বিমানের আরামদায়ক সিট, ${bag} ব্যাগেজ ট্যাগ
-🎥 ক্যামেরা: Close-up থেকে wide pan
-🎙️ ভয়েস: "${bag} ব্যাগেজ সহ! সীমিত আসন — এখনই বুক করুন!"
-🎵 মিউজিক: উত্তেজনাপূর্ণ peak moment
+📷 ভিজ্যুয়াল: বিমানের ভেতরে আরামদায়ক সিট।
+   🧳 "ব্যাগেজ: ${bag}" | ✈️ "সীমিত আসন!"
+🎥 ক্যামেরা: Close-up থেকে wide — smooth pan
+🎙️ ভয়েস: "${bag} ব্যাগেজ সহ সস্তা ডিলে ভ্রমণ করুন!"
+🎵 মিউজিক: পিক ট্রানজিশন
 
 
 🎬 সিন-৪ (২৫ - ৩৫ সেকেন্ড) — Call to Action
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: ফোন নম্বর ও অফার বড় হরফে
-🎥 ক্যামেরা: Static
-🎙️ ভয়েস: "এখনই কল করুন: ${tel}${addr ? ' | ' + addr : ''}"
-🎵 মিউজিক: জোরালো সাহসী beat
+📷 ভিজ্যুয়াল: গাঢ় ব্যাকগ্রাউন্ডে: 📞 ${tel} ${addr ? '| ' + addr : ''}
+🎥 ক্যামেরা: Static — সব মনোযোগ টেক্সটে
+🎙️ ভয়েস: "সীমিত আসন! এখনই বুক করুন — ${tel}"
+🎵 মিউজিক: জোরালো beat
 
 
 🎬 সিন-৫ (৩৫ - ৪৫ সেকেন্ড) — End Card
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📷 ভিজ্যুয়াল: লোগো, বিমান fade out
+📷 ভিজ্যুয়াল: লোগো ও বিমান আকাশে মিলিয়ে যাচ্ছে।
 🎥 ক্যামেরা: Slow zoom-out
-🎙️ ভয়েস: "আপনার স্বপ্নের গন্তব্যে পৌঁছে দিচ্ছি আমরা..."
+🎙️ ভয়েস: "আপনার নিরাপদ যাত্রায় আমরা আপনার পাশে..."
 🎵 মিউজিক: Fade out
 
 
@@ -72,90 +75,48 @@ function buildFallbackScript(payload) {
 ✈️  ${fromCity} → ${destination}
 💰  মাত্র ${price}!
 🧳  ব্যাগেজ: ${bag}
-📞  ${tel}
-${addr ? `📍  ${addr}` : ''}
+📞  ${tel}${addr ? ' | 📍 ' + addr : ''}
 `.trim();
 }
 
-// ── Call Gemini API to generate creative storyboard script ───────────────────
-async function generateWithGemini(payload, apiKey) {
-  const { fromCity, destination, ticketRate, baggage, phone, location, vibe } = payload;
-
-  const userPrompt = `
-তুমি একজন প্রফেশনাল ভিডিও স্ক্রিপ্ট রাইটার। নিচের তথ্য দিয়ে একটি ফ্লাইট টিকেট প্রমো ভিডিওর সম্পূর্ণ স্ক্রিপ্ট লেখো বাংলায়।
-
-✈️ রুট: ${fromCity} → ${destination}
-💰 টিকেট মূল্য: ${ticketRate}
-🧳 ব্যাগেজ: ${baggage}
-📞 ফোন: ${phone}
-📍 লোকেশন: ${location}
-🎥 ভিডিও ভাইব: ${vibe}
-
-স্ক্রিপ্টে অবশ্যই থাকতে হবে:
-- ৫টি সিন (Scene) — প্রতিটি সিনে: সময়কাল, ভিজ্যুয়াল বর্ণনা, ক্যামেরা মুভমেন্ট, ভয়েস/নারেশন (বাংলায়), মিউজিক
-- শেষে একটি Video Overlay Banner টেক্সট
-- ক্রিয়েটিভ ও আবেগময় ভাষা
-- প্রফেশনাল ফরম্যাট
-
-বাংলা ভাষায় সম্পূর্ণ স্ক্রিপ্ট লেখো।
-`.trim();
-
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 1500 }
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Gemini API Error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || buildFallbackScript(payload);
-}
-
-// ── Main Modal Component ─────────────────────────────────────────────────────
 export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onClose }) {
   const [editedScript, setEditedScript] = useState('');
   const [hasEdited, setHasEdited]       = useState(false);
-  const [aiLoading, setAiLoading]       = useState(false);
-  const [aiError, setAiError]           = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [scriptSource, setScriptSource] = useState('Colab Backend');
 
   useEffect(() => {
     if (!isOpen || !jobPayload) return;
     setHasEdited(false);
-    setAiError('');
 
-    const apiKey = getStoredGeminiKey();
+    const colabUrl = getStoredColabUrl();
 
-    if (apiKey) {
-      // Use Gemini AI
-      setAiLoading(true);
-      setEditedScript('');
-      generateWithGemini(jobPayload, apiKey)
-        .then(script => setEditedScript(script))
-        .catch(err => {
-          setAiError(`⚠️ Gemini Error: ${err.message} — Template ব্যবহার করা হচ্ছে।`);
-          setEditedScript(buildFallbackScript(jobPayload));
+    if (colabUrl) {
+      setLoading(true);
+      generateScriptApi(colabUrl, jobPayload)
+        .then((remoteScript) => {
+          if (remoteScript) {
+            setEditedScript(remoteScript);
+            setScriptSource('Colab AI Engine');
+          } else {
+            setEditedScript(buildFallbackScript(jobPayload));
+            setScriptSource('App Template');
+          }
         })
-        .finally(() => setAiLoading(false));
+        .catch(() => {
+          setEditedScript(buildFallbackScript(jobPayload));
+          setScriptSource('App Template');
+        })
+        .finally(() => setLoading(false));
     } else {
-      // Use fallback template
       setEditedScript(buildFallbackScript(jobPayload));
+      setScriptSource('App Template');
     }
   }, [isOpen, jobPayload]);
 
   if (!isOpen) return null;
 
   const handleApprove = () => onApprove({ ...jobPayload, prompt: editedScript });
-  const hasKey = !!getStoredGeminiKey();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -167,19 +128,17 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              {aiLoading ? <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" /> : <Film className="w-5 h-5 text-indigo-400" />}
+              {loading ? <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" /> : <Film className="w-5 h-5 text-indigo-400" />}
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                ভিডিও স্ক্রিপ্ট
-                {hasKey && (
-                  <span className="text-[10px] px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" /> Gemini AI
-                  </span>
-                )}
+                ভিডিও স্ক্রিপ্ট স্টোরিবোর্ড
+                <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-full flex items-center gap-1">
+                  <Cpu className="w-2.5 h-2.5" /> {scriptSource}
+                </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                {aiLoading ? 'Gemini AI স্ক্রিপ্ট লিখছে...' : 'সম্পাদনা করুন → Approve দিন'}
+                {loading ? 'Colab সার্ভার থেকে স্ক্রিপ্ট লোড হচ্ছে...' : 'সম্পাদনা করুন → Approve দিন'}
               </p>
             </div>
           </div>
@@ -205,24 +164,15 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
           <span className="flex items-center gap-1"><Mic className="w-3 h-3 text-green-400"/>🎙️ ভয়েস</span>
           <span className="flex items-center gap-1"><Film className="w-3 h-3 text-purple-400"/>🎥 ক্যামেরা</span>
           <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-amber-400"/>⏱️ সময়</span>
-          {!hasKey && <span className="ml-auto text-amber-400 flex items-center gap-1"><AlertCircle className="w-3 h-3"/>Template মোড (Gemini Key নেই)</span>}
           {hasEdited && <span className="ml-auto text-emerald-400">✏️ এডিট করা হয়েছে</span>}
         </div>
 
-        {/* AI Error */}
-        {aiError && (
-          <div className="mx-6 mt-3 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-300 flex items-center gap-2">
-            <AlertCircle className="w-3.5 h-3.5 shrink-0" />{aiError}
-          </div>
-        )}
-
         {/* Script Editor */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {aiLoading ? (
+          {loading ? (
             <div className="flex flex-col items-center justify-center h-48 gap-4">
               <RefreshCw className="w-10 h-10 text-indigo-400 animate-spin" />
-              <p className="text-sm text-slate-300 font-medium">Gemini AI স্ক্রিপ্ট লিখছে...</p>
-              <p className="text-xs text-slate-500">কয়েক সেকেন্ড অপেক্ষা করুন</p>
+              <p className="text-sm text-slate-300 font-medium">Colab থেকে স্ক্রিপ্ট তৈরি হচ্ছে...</p>
             </div>
           ) : (
             <textarea
@@ -233,9 +183,9 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
               spellCheck={false}
             />
           )}
-          {!aiLoading && (
+          {!loading && (
             <p className="text-[11px] text-slate-500 mt-2">
-              💡 যেকোনো লাইন পরিবর্তন করুন — তারপর Approve দিন।
+              💡 স্ক্রিপ্টের যেকোনো অংশ এডিট করতে পারেন — তারপর Approve দিন।
             </p>
           )}
         </div>
@@ -245,7 +195,7 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-slate-200 bg-slate-800/60 hover:bg-slate-800 border border-slate-700 transition-all">
             ← ফিরে যান
           </button>
-          <button onClick={handleApprove} disabled={aiLoading}
+          <button onClick={handleApprove} disabled={loading}
             className="px-7 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 disabled:opacity-50 text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all">
             <CheckCircle2 className="w-4 h-4" />
             <span>✅ Approve — ভিডিও তৈরি শুরু</span>
