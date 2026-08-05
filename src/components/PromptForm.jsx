@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Eye, Cpu, AlertCircle, Plane, DollarSign,
-  Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight
+  Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight, ArrowRight
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
 
