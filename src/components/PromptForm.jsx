@@ -116,6 +116,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
         jobPayload={pendingPayload}
         onApprove={handleApproveScript}
         onClose={() => setShowPreview(false)}
+        onOpenSettings={() => { setShowPreview(false); onOpenSettings(); }}
       />
 
       <div className="bg-[#131b2e]/90 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
