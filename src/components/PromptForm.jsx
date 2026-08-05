@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Eye, Cpu, AlertCircle, Plane, DollarSign,
+  Eye, Cpu, AlertCircle, Plane, DollarSign, Clock,
   Image as ImageIcon, X, MapPin, Phone, ArrowLeftRight, ArrowRight
 } from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
@@ -28,6 +28,13 @@ const VIBE_OPTIONS = [
   { id: 'energetic fast-paced', label: '⚡ এনার্জেটিক ও গতিময়' },
 ];
 
+const DURATION_OPTIONS = [
+  { id: '15s', label: '⏱️ ১৫ সেকেন্ড (Shorts / Reels / TikTok)' },
+  { id: '30s', label: '⏱️ ৩০ সেকেন্ড (স্ট্যান্ডার্ড প্রমো - Recommended)' },
+  { id: '60s', label: '⏱️ ১ মিনিট (বিস্তারিত কমার্শিয়াল)' },
+  { id: '120s', label: '⏱️ ২ মিনিট (ফুল ফিচার ভিডিও প্রমো)' },
+];
+
 export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpenSettings }) {
   // ─── Form Fields ───
   const [fromCity, setFromCity]       = useState('ঢাকা');
@@ -39,6 +46,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
   const [phone, setPhone]             = useState('');
   const [location, setLocation]       = useState('');
   const [vibe, setVibe]               = useState('cinematic sunset');
+  const [duration, setDuration]       = useState('30s');
   const [model, setModel]             = useState('Wan 2.2 TI2V 5B');
   const [refImageBase64, setRefImageBase64] = useState('');
   const [refImageName, setRefImageName]     = useState('');
@@ -84,6 +92,7 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
       phone,
       location,
       vibe,
+      duration,
       offer_text:       `${finalFrom} ✈️ ${finalTo} — মাত্র ${ticketRate}`,
       reference_image:  refImageBase64,
       video_model:      model,
@@ -239,17 +248,33 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
             </div>
           </div>
 
-          {/* ─── Vibe ─── */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              🌅 ভিডিওর আবহ (Vibe & Lighting)
-            </label>
-            <select value={vibe} onChange={(e) => setVibe(e.target.value)}
-              className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
-              {VIBE_OPTIONS.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
+          {/* ─── Row 4: Duration & Vibe ─── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Duration Selector */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-purple-400 mb-2 flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-purple-400" /> ভিডিওর সময়সীমা (Duration)
+              </label>
+              <select value={duration} onChange={(e) => setDuration(e.target.value)}
+                className="w-full bg-[#0b0f19] border border-purple-500/40 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-purple-500 font-semibold text-purple-200">
+                {DURATION_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Vibe Selector */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                🌅 ভিডিওর আবহ (Vibe & Lighting)
+              </label>
+              <select value={vibe} onChange={(e) => setVibe(e.target.value)}
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
+                {VIBE_OPTIONS.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* ─── Reference Image ─── */}

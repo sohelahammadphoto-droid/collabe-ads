@@ -1,30 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Rocket, Phone, MapPin, Film, Mic, Eye as EyeIcon, Clock, RefreshCw, Cpu } from 'lucide-react';
-import { getStoredColabUrl } from '../services/storage';
+import {
+  X, CheckCircle2, Rocket, Phone, MapPin, Film, Mic, Eye as EyeIcon,
+  Clock, RefreshCw, Cpu, Sparkles, Zap
+} from 'lucide-react';
+import { getStoredColabUrl, getStoredOpenRouterKey, getStoredOpenRouterModel } from '../services/storage';
 import { generateScriptApi } from '../services/api';
+import { generateOpenRouterScript } from '../services/openrouter';
 
 // ── Fallback script generator ────────────────────────────────────────────────
 function buildFallbackScript(payload) {
-  const { fromCity = '', destination = '', ticketRate = '', baggage = '', phone = '', location = '', vibe = '' } = payload || {};
+  const { fromCity = '', destination = '', ticketRate = '', baggage = '', phone = '', location = '', vibe = '', duration = '30s' } = payload || {};
   const price = ticketRate || 'বিশেষ মূল্যে';
   const bag   = baggage    || '২০ কেজি';
   const tel   = phone      || 'যোগাযোগ করুন';
   const addr  = location   || '';
+  const durStr = duration === '15s' ? '15 Seconds (Reels/Shorts)' : duration === '60s' ? '1 Minute (Full Ad)' : duration === '120s' ? '2 Minutes (Feature Commercial)' : '30 Seconds Commercial';
 
   return `
 ╔══════════════════════════════════════════════════════════╗
    ✈️ HIGH-IMPACT AIRLINE COMMERCIAL PROMO SCRIPT
    📌 ROUTE: ${fromCity} ➜ ${destination}
+   ⏱️ DURATION: ${durStr}
 ╚══════════════════════════════════════════════════════════╝
 
 📊 AD SPECIFICATIONS:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 • Target Audience : প্রবাসী ও ভ্রমণকারী (High-Converting Hook)
 • Visual Vibe    : ${vibe} Ultra-HD 4K Commercial Grade
-• Total Duration : 30 Seconds Dynamic Beat Pacing
+• Total Duration : ${durStr}
 
 
-🎬 SCENE 1: THE ATTENTION HOOK (00:00 - 00:05)
+🎬 SCENE 1: THE ATTENTION HOOK
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : মেঘ ভেদ করে একটি আল্ট্রা-প্রিমিয়াম কমার্শিয়াল এয়ারলাইনার বিমানের শট। ${fromCity}-এর আকাশমণ্ডল।
 🎥 Camera  : High-speed FPV Drone Flyby — Fast Push-in to Aircraft Window.
@@ -33,7 +39,7 @@ function buildFallbackScript(payload) {
 🎵 Music   : Deep bass drop + cinematic synth crescendo rise.
 
 
-🎬 SCENE 2: THE DESTINATION & UNBEATABLE PRICE (00:05 - 00:13)
+🎬 SCENE 2: THE DESTINATION & UNBEATABLE PRICE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : ঝকঝকে রোদে ${destination}-এর স্কাইলাইন ও এয়ারপোর্ট রানওয়ের দৃশ্য। স্ক্রিনে ৩D গোল্ডেন বোল্ড গ্লোয়িং টেক্সট পপ-আপ:
              🔥 [${fromCity} ✈️ ${destination}]
@@ -43,7 +49,7 @@ function buildFallbackScript(payload) {
 🎵 Music   : Upbeat energizing commercial dance track beat build-up.
 
 
-🎬 SCENE 3: LUXURY & BAGGAGE ALLOWANCE (00:13 - 00:20)
+🎬 SCENE 3: LUXURY & BAGGAGE ALLOWANCE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : বিমানের ফার্স্ট ক্লাস লাক্সারি সিটিং ও লাগেজ বেল্টে লাগেজ চেকিংয়ের দ্রুত শট।
              স্ক্রিনে আইকন সহ পপ-আপ টেক্সট: 🧳 ${bag} ব্যাগেজ এলাউন্স!
@@ -52,7 +58,7 @@ function buildFallbackScript(payload) {
 🎵 Music   : High energy rhythm drops to focus on features.
 
 
-🎬 SCENE 4: URGENCY & CALL TO ACTION (00:20 - 00:26)
+🎬 SCENE 4: URGENCY & CALL TO ACTION
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : স্ক্রিনের কেন্দ্রে উজ্জ্বল নিয়ন বর্ডার লাইনের টিকেট বুথ কার্ড:
              📞 যোগাযোগ: ${tel}
@@ -62,7 +68,7 @@ function buildFallbackScript(payload) {
 🎵 Music   : Fast rhythmic percussion countdown pulse.
 
 
-🎬 SCENE 5: BRANDING & OUTRO CARD (00:26 - 00:30)
+🎬 SCENE 5: BRANDING & OUTRO CARD
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📷 Visual  : ব্র্যান্ডের লোগো, হেল্পলাইন নম্বর (${tel})${addr ? ' | 📍 ' + addr : ''} সহ বিমান উড়ে যাওয়ার প্রিমিয়াম এন্ডিং।
 🎥 Camera  : Slow Motion Cinematic Crane Out Shot.
@@ -82,40 +88,66 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
   const [editedScript, setEditedScript] = useState('');
   const [hasEdited, setHasEdited]       = useState(false);
   const [loading, setLoading]           = useState(false);
-  const [scriptSource, setScriptSource] = useState('Colab Backend');
+  const [scriptSource, setScriptSource] = useState('OpenRouter Free AI');
+
+  const fetchScript = async () => {
+    if (!jobPayload) return;
+    setLoading(true);
+
+    const openRouterKey   = getStoredOpenRouterKey();
+    const openRouterModel = getStoredOpenRouterModel();
+    const colabUrl         = getStoredColabUrl();
+
+    // 1. First try OpenRouter Free AI
+    try {
+      const orScript = await generateOpenRouterScript(jobPayload, openRouterKey, openRouterModel);
+      if (orScript) {
+        setEditedScript(orScript);
+        setScriptSource(`OpenRouter Free AI (${openRouterModel.split('/')[1]?.split(':')[0] || 'Free LLM'})`);
+        setLoading(false);
+        return;
+      }
+    } catch (orErr) {
+      console.warn('OpenRouter script generation fell back:', orErr);
+    }
+
+    // 2. Second try Colab Backend script generator
+    if (colabUrl) {
+      try {
+        const remoteScript = await generateScriptApi(colabUrl, jobPayload);
+        if (remoteScript) {
+          setEditedScript(remoteScript);
+          setScriptSource('Colab AI Engine');
+          setLoading(false);
+          return;
+        }
+      } catch (colabErr) {
+        console.warn('Colab script generation fell back:', colabErr);
+      }
+    }
+
+    // 3. Fallback to Local Ad Template Builder
+    setEditedScript(buildFallbackScript(jobPayload));
+    setScriptSource('App Template Engine');
+    setLoading(false);
+  };
 
   useEffect(() => {
     if (!isOpen || !jobPayload) return;
     setHasEdited(false);
-
-    const colabUrl = getStoredColabUrl();
-
-    if (colabUrl) {
-      setLoading(true);
-      generateScriptApi(colabUrl, jobPayload)
-        .then((remoteScript) => {
-          if (remoteScript) {
-            setEditedScript(remoteScript);
-            setScriptSource('Colab AI Engine');
-          } else {
-            setEditedScript(buildFallbackScript(jobPayload));
-            setScriptSource('App Template');
-          }
-        })
-        .catch(() => {
-          setEditedScript(buildFallbackScript(jobPayload));
-          setScriptSource('App Template');
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setEditedScript(buildFallbackScript(jobPayload));
-      setScriptSource('App Template');
-    }
+    fetchScript();
   }, [isOpen, jobPayload]);
 
   if (!isOpen) return null;
 
   const handleApprove = () => onApprove({ ...jobPayload, prompt: editedScript });
+
+  const getDurText = (dur) => {
+    if (dur === '15s') return '১৫ সেকেন্ড';
+    if (dur === '60s') return '১ মিনিট';
+    if (dur === '120s') return '২ মিনিট';
+    return '৩০ সেকেন্ড';
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -126,18 +158,22 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              {loading ? <RefreshCw className="w-5 h-5 text-indigo-400 animate-spin" /> : <Film className="w-5 h-5 text-indigo-400" />}
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
+              {loading ? (
+                <RefreshCw className="w-5 h-5 text-purple-400 animate-spin" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              )}
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
                 ভিডিও স্ক্রিপ্ট স্টোরিবোর্ড
-                <span className="text-[10px] px-2 py-0.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-full flex items-center gap-1">
-                  <Cpu className="w-2.5 h-2.5" /> {scriptSource}
+                <span className="text-[10px] px-2 py-0.5 bg-purple-500/15 text-purple-300 border border-purple-500/30 rounded-full flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5 text-amber-400" /> {scriptSource}
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                {loading ? 'Colab সার্ভার থেকে স্ক্রিপ্ট লোড হচ্ছে...' : 'সম্পাদনা করুন → Approve দিন'}
+                {loading ? 'OpenRouter Free AI দিয়ে স্ক্রিপ্ট লেখা হচ্ছে...' : 'সম্পাদনা করুন → Approve দিয়ে ভিডিও তৈরি শুরু করুন'}
               </p>
             </div>
           </div>
@@ -147,14 +183,27 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
         </div>
 
         {/* Info Pills */}
-        <div className="px-6 py-2.5 bg-[#0d1526] border-b border-slate-800 flex flex-wrap gap-2">
-          <span className="px-3 py-1 rounded-full text-xs bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
-            ✈️ {jobPayload?.fromCity} → {jobPayload?.destination}
-          </span>
-          {jobPayload?.ticketRate && <span className="px-3 py-1 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/25">💰 {jobPayload.ticketRate}</span>}
-          {jobPayload?.baggage    && <span className="px-3 py-1 rounded-full text-xs bg-slate-700/60 text-slate-300 border border-slate-600/40">🧳 {jobPayload.baggage}</span>}
-          {jobPayload?.phone      && <span className="px-3 py-1 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1"><Phone className="w-3 h-3"/>{jobPayload.phone}</span>}
-          {jobPayload?.location   && <span className="px-3 py-1 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-500/25 flex items-center gap-1"><MapPin className="w-3 h-3"/>{jobPayload.location}</span>}
+        <div className="px-6 py-2.5 bg-[#0d1526] border-b border-slate-800 flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            <span className="px-3 py-1 rounded-full text-xs bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+              ✈️ {jobPayload?.fromCity} → {jobPayload?.destination}
+            </span>
+            {jobPayload?.duration   && <span className="px-3 py-1 rounded-full text-xs bg-purple-500/15 text-purple-300 border border-purple-500/25 flex items-center gap-1"><Clock className="w-3 h-3 text-purple-400"/>⏱️ {getDurText(jobPayload.duration)}</span>}
+            {jobPayload?.ticketRate && <span className="px-3 py-1 rounded-full text-xs bg-amber-500/15 text-amber-300 border border-amber-500/25">💰 {jobPayload.ticketRate}</span>}
+            {jobPayload?.baggage    && <span className="px-3 py-1 rounded-full text-xs bg-slate-700/60 text-slate-300 border border-slate-600/40">🧳 {jobPayload.baggage}</span>}
+            {jobPayload?.phone      && <span className="px-3 py-1 rounded-full text-xs bg-emerald-500/15 text-emerald-300 border border-emerald-500/25 flex items-center gap-1"><Phone className="w-3 h-3"/>{jobPayload.phone}</span>}
+            {jobPayload?.location   && <span className="px-3 py-1 rounded-full text-xs bg-sky-500/15 text-sky-300 border border-sky-500/25 flex items-center gap-1"><MapPin className="w-3 h-3"/>{jobPayload.location}</span>}
+          </div>
+
+          <button
+            onClick={fetchScript}
+            disabled={loading}
+            className="text-xs px-2.5 py-1 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/40 rounded-lg flex items-center gap-1 transition-all"
+            title="OpenRouter AI দিয়ে নতুন স্ক্রিপ্ট রি-জেনারেট করুন"
+          >
+            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+            <span>নতুন স্ক্রিপ্ট</span>
+          </button>
         </div>
 
         {/* Legend */}
@@ -170,15 +219,15 @@ export default function ScriptPreviewModal({ isOpen, jobPayload, onApprove, onCl
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-48 gap-4">
-              <RefreshCw className="w-10 h-10 text-indigo-400 animate-spin" />
-              <p className="text-sm text-slate-300 font-medium">Colab থেকে স্ক্রিপ্ট তৈরি হচ্ছে...</p>
+              <RefreshCw className="w-10 h-10 text-purple-400 animate-spin" />
+              <p className="text-sm text-slate-300 font-medium">OpenRouter Free AI দিয়ে স্ক্রিপ্ট লেখা হচ্ছে...</p>
             </div>
           ) : (
             <textarea
               value={editedScript}
               onChange={(e) => { setEditedScript(e.target.value); setHasEdited(true); }}
               rows={20}
-              className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-200 text-xs font-mono leading-relaxed resize-none focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+              className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-200 text-xs font-mono leading-relaxed resize-none focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-all"
               spellCheck={false}
             />
           )}

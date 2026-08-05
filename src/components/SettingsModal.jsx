@@ -1,18 +1,37 @@
 import React, { useState } from 'react';
-import { Settings, Save, CheckCircle2, AlertCircle, RefreshCw, Cpu, ExternalLink, HelpCircle, Key, Eye, EyeOff } from 'lucide-react';
+import {
+  Settings, Save, CheckCircle2, AlertCircle, RefreshCw,
+  Cpu, ExternalLink, HelpCircle, Key, Eye, EyeOff, Sparkles, Zap
+} from 'lucide-react';
 import { checkHealth } from '../services/api';
-import { getStoredGeminiKey, saveGeminiKey } from '../services/storage';
+import {
+  getStoredGeminiKey, saveGeminiKey,
+  getStoredOpenRouterKey, saveOpenRouterKey,
+  getStoredOpenRouterModel, saveOpenRouterModel
+} from '../services/storage';
+import { FREE_OPENROUTER_MODELS, testOpenRouterConnection } from '../services/openrouter';
 
 export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, isConnected, setIsConnected }) {
-  const [urlInput, setUrlInput]       = useState(colabUrl || '');
-  const [testing, setTesting]         = useState(false);
-  const [testResult, setTestResult]   = useState(null);
-  const [geminiKey, setGeminiKey]     = useState(getStoredGeminiKey());
-  const [showKey, setShowKey]         = useState(false);
-  const [keySaved, setKeySaved]       = useState(false);
+  const [urlInput, setUrlInput]             = useState(colabUrl || '');
+  const [testing, setTesting]               = useState(false);
+  const [testResult, setTestResult]         = useState(null);
+
+  // Gemini API Key
+  const [geminiKey, setGeminiKey]           = useState(getStoredGeminiKey());
+  const [showGeminiKey, setShowGeminiKey]   = useState(false);
+  const [geminiSaved, setGeminiSaved]       = useState(false);
+
+  // OpenRouter Config
+  const [openRouterKey, setOpenRouterKey]     = useState(getStoredOpenRouterKey());
+  const [selectedModel, setSelectedModel]     = useState(getStoredOpenRouterModel());
+  const [showORKey, setShowORKey]             = useState(false);
+  const [orSaved, setOrSaved]                 = useState(false);
+  const [orTesting, setOrTesting]             = useState(false);
+  const [orTestResult, setOrTestResult]       = useState(null);
 
   if (!isOpen) return null;
 
+  // Test Colab backend connection
   const handleTestConnection = async () => {
     if (!urlInput.trim()) {
       setTestResult({ success: false, msg: 'URL ইনপুট ঘর খালি রাখা যাবে না' });
@@ -40,8 +59,29 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
 
   const handleSaveGeminiKey = () => {
     saveGeminiKey(geminiKey);
-    setKeySaved(true);
-    setTimeout(() => setKeySaved(false), 2500);
+    setGeminiSaved(true);
+    setTimeout(() => setGeminiSaved(false), 2500);
+  };
+
+  const handleSaveOpenRouter = () => {
+    saveOpenRouterKey(openRouterKey);
+    saveOpenRouterModel(selectedModel);
+    setOrSaved(true);
+    setTimeout(() => setOrSaved(false), 2500);
+  };
+
+  const handleTestOpenRouter = async () => {
+    setOrTesting(true);
+    setOrTestResult(null);
+    const res = await testOpenRouterConnection(openRouterKey, selectedModel);
+    setOrTesting(false);
+    if (res.success) {
+      setOrTestResult({ success: true, msg: `✅ OpenRouter যুক্ত হয়েছে! AI উত্তর: "${res.text}"` });
+      saveOpenRouterKey(openRouterKey);
+      saveOpenRouterModel(selectedModel);
+    } else {
+      setOrTestResult({ success: false, msg: `❌ সংযোগ ব্যর্থ: ${res.error}` });
+    }
   };
 
   return (
@@ -56,17 +96,122 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-100">সেটিংস</h3>
-              <p className="text-xs text-slate-400">Colab URL ও Gemini AI কনফিগার করুন</p>
+              <p className="text-xs text-slate-400">OpenRouter (100% Free AI), Gemini ও Colab কনফিগার করুন</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">✕</button>
         </div>
 
-        {/* ── Section 1: Gemini API Key ── */}
+        {/* ── Section 1: OpenRouter AI (100% FREE LLM) ── */}
+        <div className="space-y-4 p-4 bg-purple-950/20 border border-purple-500/30 rounded-2xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-bold text-purple-300">
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              <span>OpenRouter AI — ১০০% ফ্রি স্ক্রিপ্ট ইঞ্জিন</span>
+            </div>
+            <span className="text-[10px] font-semibold px-2 py-0.5 bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-full">
+              ফ্রি LLM সাপোর্ট
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-300 leading-relaxed">
+            OpenRouter ব্যবহার করে DeepSeek R1, Meta Llama 3.3 70B বা Gemini-র মতো ১০০% ফ্রি AI মডেল দিয়ে অতি আকর্ষণীয় বাণিজ্যিক স্ক্রিপ্ট তৈরি করতে পারবেন।
+          </p>
+
+          {/* Model Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-purple-200 mb-1.5">
+              ফ্রি AI মডেল নির্বাচন করুন:
+            </label>
+            <select
+              value={selectedModel}
+              onChange={(e) => setSelectedModel(e.target.value)}
+              className="w-full bg-[#0b0f19] border border-purple-500/40 rounded-xl px-3 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-purple-400"
+            >
+              {FREE_OPENROUTER_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} [{m.badge}] — {m.desc}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* API Key input */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-300">
+                OpenRouter API Key (ঐচ্ছিক / ফ্রি):
+              </label>
+              <a
+                href="https://openrouter.ai/keys"
+                target="_blank"
+                rel="noreferrer"
+                className="text-[11px] text-purple-400 hover:text-purple-300 underline flex items-center gap-1"
+              >
+                <span>ফ্রি API Key পান</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+            <div className="relative">
+              <input
+                type={showORKey ? 'text' : 'password'}
+                value={openRouterKey}
+                onChange={(e) => setOpenRouterKey(e.target.value)}
+                placeholder="sk-or-v1-... (ফ্রি এপিআই কী দিতে পারেন)"
+                className="w-full bg-[#0b0f19] border border-purple-500/40 rounded-xl px-4 py-2.5 pr-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-400 font-mono"
+              />
+              <button
+                type="button"
+                onClick={() => setShowORKey(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                {showORKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+
+          {orTestResult && (
+            <div className={`p-3 rounded-xl border text-xs font-medium flex items-center gap-2 ${
+              orTestResult.success
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+            }`}>
+              {orTestResult.success
+                ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                : <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />}
+              <span>{orTestResult.msg}</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleTestOpenRouter}
+              disabled={orTesting}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center gap-1.5"
+            >
+              {orTesting ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-purple-400" /> : <Zap className="w-3.5 h-3.5 text-purple-400" />}
+              <span>{orTesting ? 'টেস্ট হচ্ছে...' : 'AI টেস্ট করুন'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveOpenRouter}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
+            >
+              {orSaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+              <span>{orSaved ? 'সেভ হয়েছে ✅' : 'OpenRouter সেভ করুন'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-800" />
+
+        {/* ── Section 2: Gemini API Key ── */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
             <Key className="w-4 h-4" />
-            <span>Gemini AI — স্ক্রিপ্ট জেনারেটর</span>
+            <span>Google Gemini AI Key (বিকল্প)</span>
             {getStoredGeminiKey() && (
               <span className="ml-auto text-[10px] px-2 py-0.5 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full">
                 ✅ সেট আছে
@@ -76,18 +221,18 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
 
           <div className="relative">
             <input
-              type={showKey ? 'text' : 'password'}
+              type={showGeminiKey ? 'text' : 'password'}
               value={geminiKey}
               onChange={(e) => setGeminiKey(e.target.value)}
-              placeholder="Gemini API Key (AQ. বা AIza... দিয়ে শুরু)"
-              className="w-full bg-[#0b0f19] border border-emerald-500/40 rounded-xl px-4 py-3 pr-12 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+              placeholder="Gemini API Key (AIza...)"
+              className="w-full bg-[#0b0f19] border border-emerald-500/40 rounded-xl px-4 py-2.5 pr-10 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
             />
             <button
               type="button"
-              onClick={() => setShowKey(s => !s)}
+              onClick={() => setShowGeminiKey(s => !s)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
             >
-              {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showGeminiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
 
@@ -95,25 +240,17 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
             <button
               onClick={handleSaveGeminiKey}
               disabled={!geminiKey.trim()}
-              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl text-xs font-semibold shadow flex items-center gap-1.5 transition-all"
             >
-              {keySaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-              <span>{keySaved ? 'সেভ হয়েছে ✅' : 'Gemini Key সেভ করুন'}</span>
+              {geminiSaved ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+              <span>{geminiSaved ? 'সেভ হয়েছে ✅' : 'Gemini Key সেভ করুন'}</span>
             </button>
-            <p className="text-[11px] text-slate-500">
-              🔒 শুধু আপনার ব্রাউজারে সেভ — GitHub-এ যাবে না
-            </p>
-          </div>
-
-          <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl text-xs text-slate-400">
-            <p className="text-emerald-300 font-semibold mb-1">✨ Gemini AI দিয়ে কী হবে?</p>
-            <p>স্ক্রিপ্ট বাটন চাপলে AI নিজে ক্রিয়েটিভ ভিডিও স্টোরি লিখবে — প্রতিবার নতুন!</p>
           </div>
         </div>
 
         <div className="border-t border-slate-800" />
 
-        {/* ── Section 2: Colab URL ── */}
+        {/* ── Section 3: Colab URL ── */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-semibold text-indigo-300">
             <Cpu className="w-4 h-4" />
@@ -121,7 +258,7 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
               Cloudflare Public URL
             </label>
             <input
@@ -129,12 +266,12 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
               placeholder="https://random-name.trycloudflare.com"
-              className="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
+              className="w-full bg-[#0b0f19] border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono"
             />
           </div>
 
           {testResult && (
-            <div className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
+            <div className={`p-3 rounded-xl border text-xs font-medium flex items-center gap-2 ${
               testResult.success
                 ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
                 : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
@@ -150,14 +287,14 @@ export default function SettingsModal({ isOpen, onClose, colabUrl, onSaveUrl, is
             <button
               onClick={handleTestConnection}
               disabled={testing}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center space-x-1.5 transition-colors"
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 flex items-center space-x-1.5 transition-colors"
             >
               {testing ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" /> : <Cpu className="w-3.5 h-3.5 text-indigo-400" />}
-              <span>{testing ? 'চেক হচ্ছে...' : 'সংযোগ পরীক্ষা করুন'}</span>
+              <span>{testing ? 'চেক হচ্ছে...' : 'Colab সংযোগ পরীক্ষা'}</span>
             </button>
             <button
               onClick={handleSaveColabUrl}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md flex items-center space-x-1.5 transition-all"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md flex items-center space-x-1.5 transition-all"
             >
               <Save className="w-3.5 h-3.5" />
               <span>URL সেভ করুন</span>
