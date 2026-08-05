@@ -20,7 +20,11 @@ export const saveOpenRouterKey = (key) => {
 };
 
 export const getStoredOpenRouterModel = () => {
-  return localStorage.getItem(STORAGE_KEYS.OPENROUTER_MODEL) || 'meta-llama/llama-3.3-70b-instruct:free';
+  const model = localStorage.getItem(STORAGE_KEYS.OPENROUTER_MODEL);
+  if (!model || model.includes('llama-3.3')) {
+    return 'google/gemini-2.0-flash-exp:free';
+  }
+  return model;
 };
 
 export const saveOpenRouterModel = (modelId) => {
