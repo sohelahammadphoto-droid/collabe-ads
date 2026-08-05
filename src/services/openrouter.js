@@ -1,37 +1,37 @@
 /**
- * AI Promo Studio - OpenRouter API Service (Dynamic Live Model Discovery & Auto-Selector)
+ * AI Promo Studio - OpenRouter API Service (Task-Specific Smart AI Selection Engine)
  */
 
 export const STATIC_FREE_OPENROUTER_MODELS = [
   {
     id: 'google/gemini-2.0-flash-exp:free',
     name: 'Google Gemini 2.0 Flash',
-    badge: '১০০% ফ্রি ও সেরা',
-    desc: 'গুগলের অতি দ্রুত ও প্রফেশনাল মডেল (সবচেয়ে নির্ভরযোগ্য)',
+    badge: '🔥 বিজ্ঞাপন ও বাংলা সেরা',
+    desc: 'গুগলের সবচেয়ে প্রফেশনাল ও সাবলীল বাংলা ভিডিও বিজ্ঞাপনী মডেল',
   },
   {
     id: 'deepseek/deepseek-r1:free',
     name: 'DeepSeek R1 Reasoning',
-    badge: 'হাই রিজনানিং',
-    desc: 'সবচেয়ে ক্রিয়েটিভ ও গভীর ভাবনার এড স্টোরি তৈরি করবে',
+    badge: '🧠 ক্রিয়েটিভ কনসেপ্ট ও রিজননিং',
+    desc: 'গভীর ভাবনার এড হুক ও সেরা কনভার্টিং স্টোরি বানাতে ওস্তাদ',
   },
   {
     id: 'qwen/qwen-2.5-72b-instruct:free',
-    name: 'Qwen 2.5 72B',
-    badge: 'বাংলা পারফেক্ট',
-    desc: 'বাংলা ভাষায় চমৎকার ও সাবলীল বিজ্ঞাপন লেখার জন্য পারফেক্ট',
+    name: 'Qwen 2.5 72B Instruct',
+    badge: '🇧🇩 বাংলা কপিরাইটিং কিং',
+    desc: 'স্বাভাবিক ও আকর্ষণীয় বাংলা বিজ্ঞাপনী শব্দ চয়নে পারফেক্ট',
   },
   {
     id: 'meta-llama/llama-3.1-70b-instruct:free',
     name: 'Meta Llama 3.1 70B',
-    badge: 'হাই কোয়ালিটি',
-    desc: 'মেটার শক্তিশালী ওপেন সোর্স মডেল',
+    badge: '🎬 কমার্শিয়াল ডিরেক্টর',
+    desc: 'মেটার ওয়ার্ল্ড-ক্লাস কমার্শিয়াল স্ক্রিপ্ট ও ভিজ্যুয়াল সিনের নির্দেশনা',
   },
   {
     id: 'mistralai/mistral-7b-instruct:free',
     name: 'Mistral 7B Instruct',
-    badge: 'লাইটওয়েট',
-    desc: 'সংক্ষিপ্ত ও চটকদার কমার্শিয়াল স্ক্রিপ্টের জন্য উপযুক্ত',
+    badge: '⚡ ফাস্ট পাঞ্চলাইন',
+    desc: 'সংক্ষিপ্ত চটজলদি বিজ্ঞাপন ও অফার কার্ড লেখার জন্য তৈরি',
   },
 ];
 
@@ -44,12 +44,11 @@ const OPENROUTER_MODELS_API = 'https://openrouter.ai/api/v1/models';
 const OPENROUTER_API_URL    = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
- * 🌐 DYNAMIC LIVE FREE MODELS DISCOVERY
- * OpenRouter-এর পাবলিক API থেকে লাইভ সচল ফ্রি মডেলসমূহ স্বয়ংক্রিয়ভাবে লোড করার ফাংশন
+ * 🎯 SMART TASK-BASED MODEL FILTER & DISCOVERY
+ * র্যান্ডম মডেল ফিল্টার করে শুধুমাত্র বিজ্ঞাপন, বাংলা কপিরাইটিং ও প্রমো সিনের উপযোগী সেরা ফ্রি মডেল ফিল্টার করে।
  */
 export async function fetchLiveFreeModels(forceRefresh = false) {
   const now = Date.now();
-  // Cache for 10 minutes unless force refreshed
   if (cachedLiveModels && !forceRefresh && (now - lastFetchTime < 10 * 60 * 1000)) {
     return cachedLiveModels;
   }
@@ -67,19 +66,49 @@ export async function fetchLiveFreeModels(forceRefresh = false) {
       return isFreeSlug || isFreePricing;
     });
 
-    if (freeList.length > 0) {
-      const formatted = freeList.map(m => {
+    // 🚫 EXCLUDE UNRELATED NON-AD MODELS (Coding, Math, Guard, Vision-only, Embeddings)
+    const nonAdKeywords = ['coder', 'math', 'base', 'embed', 'guard', 'eval', 'stepfun', 'whisper'];
+    const adSuitableList = freeList.filter(m => {
+      const lowerId = m.id.toLowerCase();
+      return !nonAdKeywords.some(kw => lowerId.includes(kw));
+    });
+
+    if (adSuitableList.length > 0) {
+      const formatted = adSuitableList.map(m => {
         let cleanName = m.name || m.id;
         cleanName = cleanName.replace(':free', '').replace(' (free)', '');
+
+        // Task-specific smart labeling based on model family
+        let badge = '১০০% ফ্রি লাইভ';
+        let desc = 'ভিডিও বিজ্ঞাপন ও কমার্শিয়াল স্ক্রিপ্ট লেখার উপযোগী সচল মডেল';
+
+        const idLower = m.id.toLowerCase();
+        if (idLower.includes('gemini')) {
+          badge = '🔥 বিজ্ঞাপন ও বাংলা সেরা';
+          desc = 'গুগলের অতি দ্রুত ও প্রফেশনাল বিজ্ঞাপনী মডেল (সবচেয়ে নির্ভরযোগ্য)';
+        } else if (idLower.includes('deepseek')) {
+          badge = '🧠 ক্রিয়েটিভ কনসেপ্ট ও রিজননিং';
+          desc = 'গভীর ভাবনার বিজ্ঞাপনী হুক ও আকর্ষণীয় সেলস স্টোরি তৈরি করবে';
+        } else if (idLower.includes('qwen')) {
+          badge = '🇧🇩 বাংলা কপিরাইটিং কিং';
+          desc = 'বাংলা ভাষায় সাবলীল বিজ্ঞাপনী ভয়েসওভার লেখার জন্য সেরা';
+        } else if (idLower.includes('llama')) {
+          badge = '🎬 কমার্শিয়াল ডিরেক্টর';
+          desc = 'মেটার প্রফেশনাল ভিডিও স্ক্রিপ্ট ও ভিজ্যুয়াল সিন নির্দেশক';
+        } else if (idLower.includes('mistral')) {
+          badge = '⚡ ফাস্ট পাঞ্চলাইন';
+          desc = 'সংক্ষিপ্ত চটজলদি বিজ্ঞাপন ও অফার টেক্সটের জন্য উপযুক্ত';
+        }
+
         return {
           id: m.id,
           name: cleanName,
-          badge: '১০০% ফ্রি লাইভ',
-          desc: m.description ? (m.description.slice(0, 65) + '...') : 'OpenRouter লাইভ সচল ফ্রি এআই মডেল',
+          badge,
+          desc,
         };
       });
 
-      // Sort so top providers (Google, DeepSeek, Qwen, Meta, Mistral) come first
+      // Sort by Ad-Writing suitability (Gemini -> DeepSeek -> Qwen -> Llama -> Mistral -> Others)
       formatted.sort((a, b) => {
         const priority = ['gemini', 'deepseek', 'qwen', 'llama', 'mistral'];
         const aIndex = priority.findIndex(p => a.id.toLowerCase().includes(p));
@@ -92,11 +121,11 @@ export async function fetchLiveFreeModels(forceRefresh = false) {
       cachedLiveModels = formatted;
       FREE_OPENROUTER_MODELS = formatted;
       lastFetchTime = now;
-      console.log(`✅ OpenRouter থেকে ${formatted.length}টি লাইভ ফ্রি মডেল স্বয়ংক্রিয়ভাবে লোড করা হয়েছে!`, formatted);
+      console.log(`🎯 আপনার প্রমো ও বিজ্ঞাপন কাজের উপযোগী ${formatted.length}টি লাইভ এআই ফিল্টার করা হয়েছে:`, formatted);
       return formatted;
     }
   } catch (err) {
-    console.warn('⚠️ OpenRouter লাইভ মডেল লোড করতে সমস্যা, লোকাল ব্যাকআপ মডেল ব্যবহৃত হচ্ছে:', err);
+    console.warn('⚠️ OpenRouter লাইভ মডেল লোড হতে সমস্যা, লোকাল প্রমো ব্যাকআপ মডেল ব্যবহৃত হচ্ছে:', err);
   }
 
   cachedLiveModels = STATIC_FREE_OPENROUTER_MODELS;
@@ -118,20 +147,28 @@ export function getDurationLabel(dur) {
 }
 
 /**
- * AI Agents Team Health Verification (Dynamically uses Live Free Models)
+ * AI Agents Team Health Verification (Assigned specifically to Ad Tasks)
  */
 export async function verifyAgentTeamHealth(apiKey) {
   const liveModels = await fetchLiveFreeModels();
   
-  // Dynamically select top 3 active free models
-  const agent1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) || liveModels[1] || liveModels[0];
-  const agent2 = liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
-  const agent3 = liveModels.find(m => m.id.includes('qwen') || m.id.includes('llama')) || liveModels[2] || liveModels[0];
+  // Smart Task Allocation for the 3 Agents:
+  // Agent 1: Concept & Strategy (DeepSeek R1 / Llama 70B)
+  const agent1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) 
+              || liveModels.find(m => m.id.includes('llama')) || liveModels[0];
+  
+  // Agent 2: Bengali Copywriting (Gemini 2.0 / Qwen 2.5)
+  const agent2 = liveModels.find(m => m.id.includes('gemini')) 
+              || liveModels.find(m => m.id.includes('qwen')) || liveModels[0];
+
+  // Agent 3: Master Director Synthesis (Qwen 2.5 / Gemini)
+  const agent3 = liveModels.find(m => m.id.includes('qwen')) 
+              || liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
 
   const agentModels = [
-    { id: agent1.id, name: agent1.name },
-    { id: agent2.id, name: agent2.name },
-    { id: agent3.id, name: agent3.name },
+    { id: agent1.id, name: `Agent 1: ${agent1.name} (এড কনসেপ্ট)` },
+    { id: agent2.id, name: `Agent 2: ${agent2.name} (বাংলা ভয়েসওভার)` },
+    { id: agent3.id, name: `Agent 3: ${agent3.name} (মাস্টার স্টোরিবোর্ড)` },
   ];
 
   const headers = {
@@ -287,16 +324,24 @@ Keep numbers, route details (${fromCity} ➜ ${destination}), ticket price (${ti
 }
 
 /**
- * 🤖 DYNAMIC AGENT MODE (Multi-AI Team Collaboration Engine using Live Discovered Free Models)
+ * 🤖 SMART TASK-BASED AGENT MODE (Specialized Assignment per Task Step)
  */
 export async function generateMultiAgentScript(payload, apiKey, onProgress) {
   const startTime = Date.now();
   const liveModels = await fetchLiveFreeModels();
 
-  // Dynamically select 3 distinct live models
-  const m1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) || liveModels[1] || liveModels[0];
-  const m2 = liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
-  const m3 = liveModels.find(m => m.id.includes('qwen') || m.id.includes('llama')) || liveModels[2] || liveModels[0];
+  // Task-optimized Agent Assignment:
+  // Agent 1: DeepSeek R1 (Creative Strategy & High-converting Hook)
+  const m1 = liveModels.find(m => m.id.includes('deepseek') || m.id.includes('r1')) 
+          || liveModels.find(m => m.id.includes('llama')) || liveModels[0];
+
+  // Agent 2: Google Gemini 2.0 / Qwen 2.5 (Bengali Commercial Copywriting)
+  const m2 = liveModels.find(m => m.id.includes('gemini')) 
+          || liveModels.find(m => m.id.includes('qwen')) || liveModels[0];
+
+  // Agent 3: Qwen 2.5 72B / Gemini (Master Director Synthesis)
+  const m3 = liveModels.find(m => m.id.includes('qwen')) 
+          || liveModels.find(m => m.id.includes('gemini')) || liveModels[0];
 
   const headers = {
     'Content-Type': 'application/json',
@@ -322,8 +367,8 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
   const durationText = getDurationLabel(duration);
   const completedAgents = [];
 
-  // STEP 1: Concept Agent
-  if (onProgress) onProgress(`⏳ Agent 1: ${m1.name} — ক্রিয়েটিভ কনসেপ্ট তৈরি হচ্ছে...`, completedAgents);
+  // STEP 1: Creative Concept Agent
+  if (onProgress) onProgress(`⏳ Agent 1: ${m1.name} — বিজ্ঞাপনী কনসেপ্ট ও হুক শট তৈরি করছে...`, completedAgents);
 
   let concept = '';
   const agent1Slugs = [m1.id, m2.id, m3.id];
@@ -359,10 +404,10 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
     }
   }
 
-  completedAgents.push(`✅ ${agent1Used} (Concept Agent) — সম্পন্ন`);
+  completedAgents.push(`✅ ${agent1Used} (এড কনসেপ্ট) — সম্পন্ন`);
 
-  // STEP 2: Copywriting Agent
-  if (onProgress) onProgress(`⏳ Agent 2: ${m2.name} — বাংলা ভয়েসওভার ও টেক্সট তৈরি হচ্ছে...`, completedAgents);
+  // STEP 2: Bengali Copywriting Agent
+  if (onProgress) onProgress(`⏳ Agent 2: ${m2.name} — কমার্শিয়াল বাংলা ভয়েসওভার প্রস্তুত করছে...`, completedAgents);
 
   let copy = '';
   const agent2Slugs = [m2.id, m3.id, m1.id];
@@ -398,10 +443,10 @@ export async function generateMultiAgentScript(payload, apiKey, onProgress) {
     }
   }
 
-  completedAgents.push(`✅ ${agent2Used} (Copywriter Agent) — সম্পন্ন`);
+  completedAgents.push(`✅ ${agent2Used} (বাংলা ভয়েসওভার) — সম্পন্ন`);
 
   // STEP 3: Master Director Agent
-  if (onProgress) onProgress(`⏳ Agent 3: ${m3.name} — চূড়ান্ত সমন্বিত স্টোরিবোর্ড প্রস্তুত করছে...`, completedAgents);
+  if (onProgress) onProgress(`⏳ Agent 3: ${m3.name} — মাস্টার ভিডিও স্টোরিবোর্ড ফাইনাল করছে...`, completedAgents);
 
   const masterPrompt = `You are the Lead Master Director Agent synthesizing creative work into a master 5-scene commercial ad script in fluent Bengali.
 
@@ -444,14 +489,14 @@ Format clearly with Header box, Ad Specs, 5 Scenes (📷 Visual, 🎥 Camera, �
         if (finalScript) {
           const mObj = liveModels.find(m => m.id === mSlug);
           if (mObj) agent3Used = mObj.name;
-          completedAgents.push(`✅ ${agent3Used} (Master Agent) — সম্পন্ন`);
+          completedAgents.push(`✅ ${agent3Used} (মাস্টার স্টোরিবোর্ড) — সম্পন্ন`);
           
-          if (onProgress) onProgress('🎉 সব AI এজেন্ট সফলভাবে লাইভ স্ক্রিপ্ট প্রস্তুত করেছে!', completedAgents);
+          if (onProgress) onProgress('🎉 সব প্রফেশনাল এআই এজেন্ট সফলভাবে কমার্শিয়াল স্ক্রিপ্ট প্রস্তুত করেছে!', completedAgents);
 
           const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
           return {
             script: finalScript.trim(),
-            modelName: `Multi-AI Agent Team (${agent1Used} + ${agent2Used} + ${agent3Used})`,
+            modelName: `Multi-AI Team (${agent1Used} + ${agent2Used} + ${agent3Used})`,
             modelId: 'multi-agent-team',
             elapsedTime: `${elapsedTime}s`,
             isLive: true,
