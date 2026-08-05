@@ -1,39 +1,51 @@
 import React, { useState } from 'react';
-import { Play, Sparkles, Cpu, AlertCircle, Plane, DollarSign, Image as ImageIcon, X, Eye } from 'lucide-react';
+import {
+  Eye, Cpu, AlertCircle, Plane, DollarSign,
+  Image as ImageIcon, X, MapPin, Phone, Luggage,
+  ArrowRight
+} from 'lucide-react';
 import ScriptPreviewModal from './ScriptPreviewModal';
 
 const POPULAR_CITIES = [
-  'Dubai (দুবাই)',
-  'Riyadh (রিয়াদ)',
-  'Jeddah (জেদ্দা)',
-  'Kuala Lumpur (কুয়ালালামপুর)',
-  'Bangkok (ব্যাংকক)',
-  "Cox's Bazar (কক্সবাজার)",
-  'London (লন্ডন)',
-  'Singapore (সিঙ্গাপুর)',
+  'ঢাকা (DAC)', 'চট্টগ্রাম (CGP)', 'সিলেট (ZYL)',
+  'রাজশাহী (RJH)', 'কক্সবাজার (CXB)',
+];
+
+const DEST_CITIES = [
+  'Dubai (দুবাই)', 'Riyadh (রিয়াদ)', 'Jeddah (জেদ্দা)',
+  'Kuala Lumpur (কুয়ালালামপুর)', 'Bangkok (ব্যাংকক)',
+  'London (লন্ডন)', 'Singapore (সিঙ্গাপুর)', 'Istanbul (ইস্তাম্বুল)',
+  'Doha (দোহা)', 'Abu Dhabi (আবুধাবি)',
 ];
 
 const VIBE_OPTIONS = [
-  { id: 'cinematic sunset', label: '🌅 সূর্যাস্তের সিনেমাটিক আলো (Cinematic Sunset)' },
-  { id: 'bright daytime', label: '☀️ উজ্জ্বল দিনের আলো (Bright Daytime)' },
-  { id: 'night city lights', label: '🌃 রাতের জমকালো শহরের আলো (Night City Lights)' },
-  { id: 'energetic fast-paced', label: '⚡ গতিময় ও এনার্জেটিক ভাইব (Energetic/Fast-paced)' },
+  { id: 'cinematic sunset', label: '🌅 সিনেমাটিক সানসেট' },
+  { id: 'bright daytime', label: '☀️ উজ্জ্বল দিনের আলো' },
+  { id: 'night city lights', label: '🌃 রাতের শহরের আলো' },
+  { id: 'energetic fast-paced', label: '⚡ এনার্জেটিক ও গতিময়' },
 ];
 
 export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpenSettings }) {
-  const [destination, setDestination] = useState('Dubai');
-  const [customCity, setCustomCity] = useState('');
-  const [vibe, setVibe] = useState('cinematic sunset');
-  const [offerText, setOfferText] = useState('ঢাকা ➔ দুবাই মাত্র ৳৩৫,০০০!');
-  const [model, setModel] = useState('Wan 2.2 TI2V 5B');
+  // ─── Form Fields ───
+  const [fromCity, setFromCity]       = useState('ঢাকা (DAC)');
+  const [customFrom, setCustomFrom]   = useState('');
+  const [toCity, setToCity]           = useState('Dubai (দুবাই)');
+  const [customTo, setCustomTo]       = useState('');
+  const [ticketRate, setTicketRate]   = useState('৳৩৫,০০০');
+  const [baggage, setBaggage]         = useState('২০ কেজি');
+  const [phone, setPhone]             = useState('');
+  const [location, setLocation]       = useState('');
+  const [vibe, setVibe]               = useState('cinematic sunset');
+  const [model, setModel]             = useState('Wan 2.2 TI2V 5B');
   const [refImageBase64, setRefImageBase64] = useState('');
-  const [refImageName, setRefImageName] = useState('');
+  const [refImageName, setRefImageName]     = useState('');
 
-  // Script Preview Modal state
+  // ─── Modal State ───
   const [showPreview, setShowPreview] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
 
-  const finalCity = customCity.trim() || destination.split(' ')[0];
+  const finalFrom = customFrom.trim() || fromCity.split(' ')[0];
+  const finalTo   = customTo.trim()   || toCity.split(' ')[0];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -44,38 +56,39 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
     reader.readAsDataURL(file);
   };
 
-  const removeImage = () => {
-    setRefImageBase64('');
-    setRefImageName('');
-  };
+  const removeImage = () => { setRefImageBase64(''); setRefImageName(''); };
 
-  // Step 1: Build payload & show preview modal
+  // Step 1: Open preview modal with all filled info
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!finalCity || isGenerating) return;
+    if (!finalFrom || !finalTo || isGenerating) return;
 
     const payload = {
-      destination: finalCity,
+      fromCity:    finalFrom,
+      destination: finalTo,
+      ticketRate,
+      baggage,
+      phone,
+      location,
       vibe,
-      offer_text: offerText.trim(),
-      reference_image: refImageBase64,
-      video_model: model,
+      offer_text:       `${finalFrom} ✈️ ${finalTo} — মাত্র ${ticketRate}`,
+      reference_image:  refImageBase64,
+      video_model:      model,
     };
 
     setPendingPayload(payload);
-    setShowPreview(true); // ← Open preview modal
+    setShowPreview(true);
   };
 
-  // Step 2: User approved the script → send to Colab
+  // Step 2: Approved → send to Colab
   const handleApproveScript = (approvedPayload) => {
     setShowPreview(false);
     setPendingPayload(null);
-    onSubmit(approvedPayload); // ← Now send to Colab
+    onSubmit(approvedPayload);
   };
 
   return (
     <>
-      {/* ─── Script Preview Modal ─── */}
       <ScriptPreviewModal
         isOpen={showPreview}
         jobPayload={pendingPayload}
@@ -83,38 +96,31 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
         onClose={() => setShowPreview(false)}
       />
 
-      {/* ─── Main Form Card ─── */}
       <div className="bg-[#131b2e]/90 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-2xl shadow-indigo-950/20 backdrop-blur-xl">
 
-        {/* Title Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <Plane className="w-5 h-5 text-indigo-400" />
-              ফ্লাইট টিকিট প্রমোশন ভিডিও জেনারেটর
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              গন্তব্য ও অফারের মূল্য ইনপুট দিন — স্বয়ংক্রিয়ভাবে নিখুঁত ভিডিও প্রমো তৈরি হয়ে যাবে!
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+            <Plane className="w-5 h-5 text-indigo-400" />
+            ফ্লাইট টিকিট প্রমো ভিডিও জেনারেটর
+          </h2>
+          <p className="text-xs text-slate-400 mt-1">
+            সব তথ্য দিন — AI স্বয়ংক্রিয়ভাবে পেশাদার প্রমো ভিডিও স্ক্রিপ্ট তৈরি করবে।
+          </p>
         </div>
 
-        {/* Disconnected Warning Banner */}
+        {/* Disconnected Banner */}
         {!isConnected && (
           <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start justify-between gap-3 text-sm">
             <div className="flex items-start gap-2.5">
               <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div>
                 <p className="font-semibold text-rose-200">❌ Colab সার্ভার connected নেই</p>
-                <p className="text-xs text-rose-300/90 mt-0.5">
-                  ভিডিও তৈরি করতে Google Colab notebook চালিয়ে নতুন Cloudflare URL সেটিংস-এ যুক্ত করুন।
-                </p>
+                <p className="text-xs text-rose-300/90 mt-0.5">Google Colab notebook চালিয়ে Cloudflare URL সেটিংস-এ দিন।</p>
               </div>
             </div>
-            <button
-              onClick={onOpenSettings}
-              className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 rounded-lg text-xs font-medium whitespace-nowrap transition-colors"
-            >
+            <button onClick={onOpenSettings}
+              className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-200 rounded-lg text-xs font-medium whitespace-nowrap">
               সেটিংসে যান
             </button>
           </div>
@@ -122,122 +128,145 @@ export default function PromptForm({ onSubmit, isGenerating, isConnected, onOpen
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Destination City Selection */}
+          {/* ─── Row 1: From → To ─── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* From */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                ✈️ গন্তব্য শহর (Destination City)
+                🛫 কোথা থেকে (Origin)
               </label>
-              <select
-                value={destination}
-                onChange={(e) => { setDestination(e.target.value); setCustomCity(''); }}
-                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500"
-              >
-                {POPULAR_CITIES.map((city, idx) => (
-                  <option key={idx} value={city}>{city}</option>
-                ))}
+              <select value={fromCity} onChange={(e) => { setFromCity(e.target.value); setCustomFrom(''); }}
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 mb-2">
+                {POPULAR_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
               </select>
+              <input type="text" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+                placeholder="অথবা নিজে লিখুন…"
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500" />
             </div>
+
+            {/* To */}
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                অন্যান্য শহর লিখুন (Custom City)
+                🛬 কোথায় (Destination)
               </label>
-              <input
-                type="text"
-                value={customCity}
-                onChange={(e) => setCustomCity(e.target.value)}
-                placeholder="যেমন: Istanbul, Tokyo..."
-                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500"
-              />
+              <select value={toCity} onChange={(e) => { setToCity(e.target.value); setCustomTo(''); }}
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500 mb-2">
+                {DEST_CITIES.map((c, i) => <option key={i} value={c}>{c}</option>)}
+              </select>
+              <input type="text" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+                placeholder="অথবা নিজে লিখুন…"
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500" />
             </div>
           </div>
 
-          {/* Vibe Selector */}
+          {/* Route Preview Badge */}
+          {(finalFrom && finalTo) && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-sm">
+              <span className="text-indigo-300 font-bold">{finalFrom}</span>
+              <ArrowRight className="w-4 h-4 text-indigo-400" />
+              <span className="text-indigo-300 font-bold">{finalTo}</span>
+              <span className="ml-auto text-xs text-slate-500">রুট নিশ্চিত ✅</span>
+            </div>
+          )}
+
+          {/* ─── Row 2: Rate & Baggage ─── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
+                <DollarSign className="w-4 h-4" /> টিকেটের রেট / মূল্য
+              </label>
+              <input type="text" value={ticketRate} onChange={(e) => setTicketRate(e.target.value)}
+                placeholder="যেমন: ৳৩৫,০০০"
+                className="w-full bg-[#0b0f19] border border-amber-500/40 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 font-bold text-amber-200" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                🧳 ব্যাগেজ অনুমতি
+              </label>
+              <input type="text" value={baggage} onChange={(e) => setBaggage(e.target.value)}
+                placeholder="যেমন: ২০ কেজি, ৩০ কেজি"
+                className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          {/* ─── Row 3: Phone & Location ─── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-2 flex items-center gap-1.5">
+                <Phone className="w-4 h-4" /> যোগাযোগ নম্বর
+              </label>
+              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
+                placeholder="যেমন: 01700-000000"
+                className="w-full bg-[#0b0f19] border border-emerald-500/40 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-emerald-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-sky-400 mb-2 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4" /> অফিস লোকেশন / ঠিকানা
+              </label>
+              <input type="text" value={location} onChange={(e) => setLocation(e.target.value)}
+                placeholder="যেমন: মতিঝিল, ঢাকা"
+                className="w-full bg-[#0b0f19] border border-sky-500/40 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500" />
+            </div>
+          </div>
+
+          {/* ─── Vibe ─── */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-              🌅 ভিডিওর আবহ/আলোকসজ্জা (Vibe & Lighting)
+              🌅 ভিডিওর আবহ (Vibe & Lighting)
             </label>
-            <select
-              value={vibe}
-              onChange={(e) => setVibe(e.target.value)}
-              className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500"
-            >
+            <select value={vibe} onChange={(e) => setVibe(e.target.value)}
+              className="w-full bg-[#0b0f19] border border-slate-700/80 rounded-xl px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-indigo-500">
               {VIBE_OPTIONS.map((item) => (
                 <option key={item.id} value={item.id}>{item.label}</option>
               ))}
             </select>
           </div>
 
-          {/* Offer Text */}
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-amber-400" />
-              <span>অফার ও টিকেটের মূল্য টেক্সট (ভিডিওর নিচে ওভারলে হবে)</span>
-            </label>
-            <input
-              type="text"
-              value={offerText}
-              onChange={(e) => setOfferText(e.target.value)}
-              placeholder="যেমন: ঢাকা টু দুবাই — মাত্র ৳৩৫,০০০ থেকে শুরু!"
-              className="w-full bg-[#0b0f19] border border-amber-500/40 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-amber-500 font-medium"
-            />
-            <p className="text-[11px] text-slate-400 mt-1">
-              * এটি ভিডিওর নিচে ব্যানার হিসেবে বসানো হবে।
-            </p>
-          </div>
-
-          {/* Reference Image Upload */}
+          {/* ─── Reference Image ─── */}
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
               <ImageIcon className="w-4 h-4 text-indigo-400" />
-              <span>রেফারেন্স ছবি আপলোড করুন (ঐচ্ছিক - Image-to-Video Mode)</span>
+              রেফারেন্স ছবি (ঐচ্ছিক — Image-to-Video Mode)
             </label>
             {!refImageBase64 ? (
               <label className="flex items-center justify-center w-full p-3 bg-[#0b0f19] border border-dashed border-slate-700 hover:border-indigo-500 rounded-xl cursor-pointer transition-colors text-xs text-slate-400 gap-2">
                 <ImageIcon className="w-4 h-4 text-slate-500" />
-                <span>শহরের আকাশরেখা বা ল্যান্ডমার্কের ছবি নির্বাচন করুন</span>
+                <span>শহরের ছবি বা অফিসের ছবি নির্বাচন করুন</span>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
             ) : (
               <div className="flex items-center justify-between p-3 bg-slate-900/80 border border-indigo-500/40 rounded-xl text-xs text-indigo-300">
                 <div className="flex items-center space-x-3 overflow-hidden">
                   <img src={refImageBase64} alt="Ref" className="w-10 h-10 object-cover rounded-lg border border-slate-700" />
-                  <span className="truncate">{refImageName || 'রেফারেন্স ছবি যুক্ত হয়েছে'}</span>
+                  <span className="truncate">{refImageName || 'ছবি যুক্ত হয়েছে'}</span>
                 </div>
-                <button type="button" onClick={removeImage} className="p-1 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800">
+                <button type="button" onClick={removeImage} className="p-1 text-slate-400 hover:text-rose-400 rounded-lg">
                   <X className="w-4 h-4" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Model Selector & Submit */}
+          {/* ─── Model & Submit ─── */}
           <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-3">
               <Cpu className="w-4 h-4 text-indigo-400" />
-              <span className="text-xs font-semibold text-slate-300">ভিডিও মডেল:</span>
-              <select
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="bg-[#0b0f19] border border-slate-700 text-slate-200 text-xs font-medium rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500"
-              >
+              <span className="text-xs font-semibold text-slate-300">মডেল:</span>
+              <select value={model} onChange={(e) => setModel(e.target.value)}
+                className="bg-[#0b0f19] border border-slate-700 text-slate-200 text-xs font-medium rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500">
                 <option value="Wan 2.2 TI2V 5B">Wan 2.2 TI2V-5B (Primary)</option>
                 <option value="LTX-Video">LTX-Video (Fast Fallback)</option>
               </select>
             </div>
 
-            {/* ─── Main Button: Preview Script First ─── */}
-            <button
-              type="submit"
-              disabled={!finalCity || isGenerating}
+            <button type="submit" disabled={!finalFrom || !finalTo || isGenerating}
               className={`px-7 py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
-                !finalCity || isGenerating
+                !finalFrom || !finalTo || isGenerating
                   ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700/50'
-                  : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 hover:scale-[1.01] active:scale-[0.99]'
-              }`}
-            >
+                  : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-600/30 hover:scale-[1.02] active:scale-[0.98]'
+              }`}>
               <Eye className="w-4 h-4" />
-              <span>{isGenerating ? 'প্রসেসিং হচ্ছে...' : 'স্ক্রিপ্ট দেখুন → Approve করুন'}</span>
+              <span>{isGenerating ? 'প্রসেসিং হচ্ছে...' : '📄 স্ক্রিপ্ট দেখুন ও Approve করুন'}</span>
             </button>
           </div>
 
