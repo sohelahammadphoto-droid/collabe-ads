@@ -3,8 +3,18 @@
  */
 
 const STORAGE_KEYS = {
-  COLAB_URL: 'ai_promo_colab_url',
-  HISTORY: 'ai_promo_history',
+  COLAB_URL:   'ai_promo_colab_url',
+  HISTORY:     'ai_promo_history',
+  GEMINI_KEY:  'ai_promo_gemini_key',
+};
+
+// Gemini API Key (stored locally in browser only — never sent to GitHub)
+export const getStoredGeminiKey = () => {
+  return localStorage.getItem(STORAGE_KEYS.GEMINI_KEY) || '';
+};
+
+export const saveGeminiKey = (key) => {
+  localStorage.setItem(STORAGE_KEYS.GEMINI_KEY, key.trim());
 };
 
 // Default fallback demo URL or empty
